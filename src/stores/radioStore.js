@@ -51,12 +51,17 @@ export const useRadioStore = defineStore('radio', {
       title: null
     },
     stationSongData: {},
-    songChangedTimeout: null
+    songChangedTimeout: null,
+    streamNonce: 0
   }),
 
   getters: {
     currentStation: (state) => state.stations[state.currentStationIndex],
-    currentStream: (state) => state.stations[state.currentStationIndex].stream,
+    currentStream: (state) => {
+      const stream = state.stations[state.currentStationIndex].stream
+      const separator = stream.includes('?') ? '&' : '?'
+      return `${stream}${separator}t=${state.streamNonce}`
+    },
     currentSongInfo: (state) => state.currentSongData,
     getStationSongInfo: (state) => (stationId) => state.stationSongData[stationId] || { artist: null, title: null },
     isDiskliked: (state) => (artist) => state.dislikes.some(dislike => artist?.includes(dislike)),
@@ -69,6 +74,7 @@ export const useRadioStore = defineStore('radio', {
       this.originalStationIndex = index
       this.currentStationIndex = index
       this.isPlaying = true
+      this.streamNonce += 1
       this.fetchCurrentSong()
     },
 
@@ -145,6 +151,7 @@ export const useRadioStore = defineStore('radio', {
 
     skipStation() {
       this.currentStationIndex = (this.currentStationIndex + 1) % this.stations.length
+      this.streamNonce += 1
       this.fetchCurrentSong()
     },
 
@@ -157,11 +164,13 @@ export const useRadioStore = defineStore('radio', {
       const currentIndex = this.preferredStations.indexOf(this.currentStationIndex)
       let nextIndex = (currentIndex + 1) % this.preferredStations.length
       this.currentStationIndex = this.preferredStations[nextIndex]
+      this.streamNonce += 1
       this.fetchCurrentSong()
     },
 
     returnToOriginalStation() {
       this.currentStationIndex = this.originalStationIndex
+      this.streamNonce += 1
       this.fetchCurrentSong()
     },
 
