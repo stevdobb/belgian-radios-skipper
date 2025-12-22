@@ -42,13 +42,16 @@ export const useRadioStore = defineStore('radio', {
       }
     ],
     currentStationIndex: 0,
+    originalStationIndex: 0,
     isPlaying: false,
-    dislikes: [],
+    dislikes: ['Freek', 'Toerist Le MC', 'Bazart'],
+    preferredStations: [],
     currentSongData: {
       artist: null,
       title: null
     },
-    stationSongData: {}
+    stationSongData: {},
+    songChangedTimeout: null
   }),
 
   getters: {
@@ -56,11 +59,14 @@ export const useRadioStore = defineStore('radio', {
     currentStream: (state) => state.stations[state.currentStationIndex].stream,
     currentSongInfo: (state) => state.currentSongData,
     getStationSongInfo: (state) => (stationId) => state.stationSongData[stationId] || { artist: null, title: null },
-    isDiskliked: (state) => (artist) => state.dislikes.some(dislike => artist?.includes(dislike))
+    isDiskliked: (state) => (artist) => state.dislikes.some(dislike => artist?.includes(dislike)),
+    orderedPreferredStations: (state) => state.preferredStations.map(id => state.stations.find(s => s.id === id)).filter(Boolean),
+    isPreferredStation: (state) => (stationId) => state.preferredStations.includes(stationId)
   },
 
   actions: {
     selectStation(index) {
+      this.originalStationIndex = index
       this.currentStationIndex = index
       this.isPlaying = true
       this.fetchCurrentSong()
@@ -79,7 +85,11 @@ export const useRadioStore = defineStore('radio', {
           }
 
           if (this.isDiskliked(this.currentSongData.artist)) {
-            this.skipStation()
+            if (this.preferredStations.length > 0) {
+              this.skipToNextPreferred()
+            } else {
+              this.skipStation()
+            }
           }
         }
       } catch (error) {
@@ -137,8 +147,47 @@ export const useRadioStore = defineStore('radio', {
       this.fetchCurrentSong()
     },
 
-    togglePlayback() {
-      this.isPlaying = !this.isPlaying
+    skipToNextPreferred() {
+      if (this.preferredStations.length === 0) {
+        this.skipStation()
+        return
+      }
+
+      const currentIndex = this.preferredStations.indexOf(this.currentStationIndex)
+      let nextIndex = (currentIndex + 1) % this.preferredStations.length
+      this.currentStationIndex = this.preferredStations[nextIndex]
+      this.fetchCurrentSong()
+    },
+
+    returnToOriginalStation() {
+      this.currentStationIndex = this.originalStationIndex
+      this.fetchCurrentSong()
+    },
+
+    togglePreferredStation(stationId) {
+      const index = this.preferredStations.indexOf(stationId)
+      if (index > -1) {
+        this.preferredStations.splice(index, 1)
+      } else {
+        this.preferredStations.push(stationId)
+      }
+      this.savePreferences()
+    },
+
+    reorderPreferredStations(newOrder) {
+      this.preferredStations = newOrder
+      this.savePreferences()
+    },
+
+    savePreferences() {
+      localStorage.setItem('preferredStations', JSON.stringify(this.preferredStations))
+    },
+
+    loadPreferences() {
+      const saved = localStorage.getItem('preferredStations')
+      if (saved) {
+        this.preferredStations = JSON.parse(saved)
+      }
     },
 
     findKeyValueInObject(obj, key) {
