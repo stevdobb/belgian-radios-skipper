@@ -2,32 +2,49 @@
 <template>
   <div class="space-y-4 md:space-y-6 pb-4 md:pb-6">
     <!-- Now Playing Section -->
-    <div v-if="radioStore.currentSongData.artist" class="px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6">
+    <div class="px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6">
       <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-8 border border-blue-200 dark:border-slate-700 shadow-lg">
-        <div class="text-blue-600 dark:text-blue-300 text-xs md:text-sm font-semibold uppercase tracking-wider mb-3 md:mb-4">
-          Now Playing
+        <div class="flex items-center justify-between gap-3 mb-3 md:mb-4">
+          <div class="text-blue-600 dark:text-blue-300 text-xs md:text-sm font-semibold uppercase tracking-wider">
+            Now Playing
+          </div>
+          <button
+            @click="togglePlayback"
+            class="p-2 sm:p-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-full transition-all shadow-lg"
+            title="Play/Pause"
+          >
+            <component
+              :is="radioStore.isPlaying ? PauseIcon : PlayIcon"
+              class="w-4 h-4 sm:w-5 sm:h-5 text-white"
+            />
+          </button>
         </div>
         <h2 class="text-xl sm:text-2xl md:text-4xl font-bold text-gray-900 dark:text-slate-100 mb-2 line-clamp-2">
           {{ radioStore.currentStationName || 'Loading...' }}
         </h2>
         <div class="space-y-3 mt-3 sm:mt-4 md:mt-6 pt-3 sm:pt-4 md:pt-6 border-t border-blue-200 dark:border-slate-700">
-          <div class="flex items-start space-x-3 md:space-x-4">
-            <div class="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center flex-shrink-0">
-              <MusicalNoteIcon class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
+          <template v-if="radioStore.currentSongData.artist || radioStore.currentSongData.title">
+            <div class="flex items-start space-x-3 md:space-x-4">
+              <div class="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                <MusicalNoteIcon class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-blue-600 dark:text-blue-300 text-xs font-semibold uppercase mb-1">Artist</p>
+                <p class="text-gray-900 dark:text-slate-100 text-base sm:text-lg md:text-xl font-bold line-clamp-2 break-words">{{ radioStore.currentSongData.artist || 'Unknown Artist' }}</p>
+              </div>
             </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-blue-600 dark:text-blue-300 text-xs font-semibold uppercase mb-1">Artist</p>
-              <p class="text-gray-900 dark:text-slate-100 text-base sm:text-lg md:text-xl font-bold line-clamp-2 break-words">{{ radioStore.currentSongData.artist }}</p>
+            <div class="flex items-start space-x-3 md:space-x-4">
+              <div class="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                <SparklesIcon class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-blue-600 dark:text-blue-300 text-xs font-semibold uppercase mb-1">Song Title</p>
+                <p class="text-gray-900 dark:text-slate-100 text-base sm:text-lg md:text-xl font-bold line-clamp-2 break-words">{{ radioStore.currentSongData.title || 'Unknown Title' }}</p>
+              </div>
             </div>
-          </div>
-          <div class="flex items-start space-x-3 md:space-x-4">
-            <div class="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg flex items-center justify-center flex-shrink-0">
-              <SparklesIcon class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-blue-600 dark:text-blue-300 text-xs font-semibold uppercase mb-1">Song Title</p>
-              <p class="text-gray-900 dark:text-slate-100 text-base sm:text-lg md:text-xl font-bold line-clamp-2 break-words">{{ radioStore.currentSongData.title }}</p>
-            </div>
+          </template>
+          <div v-else class="text-gray-600 dark:text-slate-300 text-sm italic">
+            No song info available
           </div>
         </div>
       </div>

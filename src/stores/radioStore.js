@@ -57,6 +57,7 @@ export const useRadioStore = defineStore('radio', {
 
   getters: {
     currentStation: (state) => state.stations[state.currentStationIndex],
+    currentStationName: (state) => state.stations[state.currentStationIndex]?.name || '',
     currentStream: (state) => {
       const stream = state.stations[state.currentStationIndex].stream
       const separator = stream.includes('?') ? '&' : '?'
@@ -74,6 +75,7 @@ export const useRadioStore = defineStore('radio', {
       this.originalStationIndex = index
       this.currentStationIndex = index
       this.isPlaying = true
+      this.currentSongData = { artist: null, title: null }
       this.streamNonce += 1
       this.fetchCurrentSong()
     },
@@ -84,22 +86,30 @@ export const useRadioStore = defineStore('radio', {
         const response = await axios.get(station.endpoint)
         const songData = this.findKeyValueInObject(response.data, 'nowOnAirItem')
 
-        if (songData && songData.title) {
+        if (songData) {
+          const rawArtist = songData.artist || songData.author || null
+          const displayArtist = rawArtist || 'Unknown Artist'
+          const displayTitle = songData.title || songData.program?.title || songData.broadcast?.title || 'Unknown Title'
+
           this.currentSongData = {
-            artist: songData.artist || 'Unknown Artist',
-            title: songData.title || 'Unknown Title'
+            artist: displayArtist,
+            title: displayTitle
           }
 
-          if (this.isDiskliked(this.currentSongData.artist)) {
+          if (rawArtist && this.isDiskliked(rawArtist)) {
+            this.isPlaying = true
             if (this.preferredStations.length > 0) {
               this.skipToNextPreferred()
             } else {
               this.skipStation()
             }
           }
+        } else {
+          this.currentSongData = { artist: null, title: null }
         }
       } catch (error) {
         console.error('Error fetching current song:', error)
+        this.currentSongData = { artist: null, title: null }
       }
     },
 
@@ -151,6 +161,7 @@ export const useRadioStore = defineStore('radio', {
 
     skipStation() {
       this.currentStationIndex = (this.currentStationIndex + 1) % this.stations.length
+      this.currentSongData = { artist: null, title: null }
       this.streamNonce += 1
       this.fetchCurrentSong()
     },
@@ -164,12 +175,14 @@ export const useRadioStore = defineStore('radio', {
       const currentIndex = this.preferredStations.indexOf(this.currentStationIndex)
       let nextIndex = (currentIndex + 1) % this.preferredStations.length
       this.currentStationIndex = this.preferredStations[nextIndex]
+      this.currentSongData = { artist: null, title: null }
       this.streamNonce += 1
       this.fetchCurrentSong()
     },
 
     returnToOriginalStation() {
       this.currentStationIndex = this.originalStationIndex
+      this.currentSongData = { artist: null, title: null }
       this.streamNonce += 1
       this.fetchCurrentSong()
     },

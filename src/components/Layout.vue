@@ -14,8 +14,8 @@
     <!-- Sidebar Navigation -->
     <nav
       :class="[
-        'bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 shadow-md flex flex-col transition-all duration-300',
-        sidebarOpen ? 'w-64' : 'w-0 md:w-64',
+        'bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 shadow-md flex flex-col transition-all duration-300 overflow-hidden',
+        sidebarOpen ? 'w-64 pointer-events-auto' : 'w-0 pointer-events-none md:w-64 md:pointer-events-auto',
         'fixed md:relative h-full z-40'
       ]"
     >
@@ -67,7 +67,7 @@
     <!-- Main Content -->
     <div class="flex-1 flex flex-col overflow-hidden">
       <!-- Header -->
-      <header class="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-4 md:px-6 py-4 shadow-sm">
+      <!-- <header class="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-4 md:px-6 py-4 shadow-sm">
         <div class="flex items-center justify-between">
           <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-slate-100 ml-12 md:ml-0">{{ headerTitle }}</h2>
           <div class="flex items-center space-x-4">
@@ -76,7 +76,7 @@
             </button>
           </div>
         </div>
-      </header>
+      </header> -->
 
       <!-- Router View -->
       <main class="flex-1 overflow-auto">
@@ -87,26 +87,8 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
-import { HomeIcon, CogIcon, InformationCircleIcon } from '@heroicons/vue/24/outline'
+import { ref } from 'vue'
+import { HomeIcon, CogIcon } from '@heroicons/vue/24/outline'
 
-const route = useRoute()
-const showInfo = ref(false)
 const sidebarOpen = ref(false)
-
-const headerTitle = computed(() => {
-  switch (route.path) {
-    case '/':
-      return 'Radio Stations'
-    case '/settings':
-      return 'Settings'
-    default:
-      return 'Belgian Radio'
-  }
-})
-
-const toggleInfo = () => {
-  showInfo.value = !showInfo.value
-}
 </script>
