@@ -35,7 +35,7 @@
           </div>
         </div>
         <div v-else class="text-gray-600 text-sm italic">
-          Loading song info...
+          No song playing now
         </div>
       </div>
 

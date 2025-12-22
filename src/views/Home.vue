@@ -231,8 +231,12 @@ let refreshInterval = null
 onMounted(async () => {
   radioStore.loadDislikes()
   radioStore.loadPreferences()
-  await radioStore.fetchCurrentSong()
-  await radioStore.fetchAllStations()
+  
+  // Fetch current song first (don't wait for all stations)
+  radioStore.fetchCurrentSong()
+  
+  // Fetch all stations in background (non-blocking)
+  radioStore.fetchAllStations()
 
   // Auto-play
   if (audioPlayer.value) {
@@ -242,11 +246,15 @@ onMounted(async () => {
     radioStore.isPlaying = true
   }
 
-  // Refresh song info every 10 seconds
-  refreshInterval = setInterval(async () => {
-    await radioStore.fetchCurrentSong()
-    await radioStore.fetchAllStations()
-  }, 10000)
+  // Refresh current song info every 15 seconds
+  refreshInterval = setInterval(() => {
+    radioStore.fetchCurrentSong()
+  }, 15000)
+  
+  // Refresh all stations info every 30 seconds
+  setInterval(() => {
+    radioStore.fetchAllStations()
+  }, 30000)
 })
 
 onUnmounted(() => {

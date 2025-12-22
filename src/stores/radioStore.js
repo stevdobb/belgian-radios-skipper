@@ -8,7 +8,7 @@ export const useRadioStore = defineStore('radio', {
         id: 0,
         name: 'Studio Brussel',
         shortName: 'Stubru',
-        stream: 'https://vrt.streamabc.net/vrt-studiobrussel-mp3-128-4409118?sABC=6949235o%230%23p852498102q7413s32s696rr8435r1pq%23&aw_0_1st.playerid=&amsparams=playerid:;skey:1766400859',
+        stream: 'https://vrt.streamabc.net/vrt-studiobrussel-mp3-128-4409118',
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-stubru',
         color: 'from-blue-500 to-blue-700',
         icon: 'music'
@@ -17,7 +17,7 @@ export const useRadioStore = defineStore('radio', {
         id: 1,
         name: 'MNM',
         shortName: 'MNM',
-        stream: 'https://vrt.streamabc.net/vrt-mnm-mp3-128-9205274?sABC=6949239n%230%23p852498102q7413s32s696rr8435r1pq%23&aw_0_1st.playerid=&amsparams=playerid:;skey:1766400922',
+        stream: 'https://vrt.streamabc.net/vrt-mnm-mp3-128-9205274',
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-mnm',
         color: 'from-purple-500 to-purple-700',
         icon: 'microphone'
@@ -26,7 +26,7 @@ export const useRadioStore = defineStore('radio', {
         id: 2,
         name: 'Bruut',
         shortName: 'Bruut',
-        stream: 'https://vrt.streamabc.net/vrt-zwaregitaren-mp3-128-2689110?sABC=694923p3%230%23p852498102q7413s32s696rr8435r1pq%23&aw_0_1st.playerid=&amsparams=playerid:;skey:1766400963',
+        stream: 'https://vrt.streamabc.net/vrt-zwaregitaren-mp3-128-2689110',
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-stubrubruut',
         color: 'from-red-500 to-red-700',
         icon: 'heart'
@@ -35,7 +35,7 @@ export const useRadioStore = defineStore('radio', {
         id: 3,
         name: 'Vuurland',
         shortName: 'Vuurland',
-        stream: 'https://vrt.streamabc.net/vrt-stubruvuurland-mp3-128-1929329?sABC=694923r0%230%23p852498102q7413s32s696rr8435r1pq%23&aw_0_1st.playerid=&amsparams=playerid:;skey:1766400992',
+        stream: 'https://vrt.streamabc.net/vrt-stubruvuurland-mp3-128-1929329',
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-stubru-vuurland',
         color: 'from-orange-500 to-orange-700',
         icon: 'flame'
@@ -99,21 +99,22 @@ export const useRadioStore = defineStore('radio', {
 
     async fetchAllStations() {
       try {
-        for (const station of this.stations) {
-          try {
-            const response = await axios.get(station.endpoint)
-            const songData = this.findKeyValueInObject(response.data, 'nowOnAirItem')
-
-            if (songData && songData.title) {
-              this.stationSongData[station.id] = {
-                artist: songData.artist || 'Unknown Artist',
-                title: songData.title || 'Unknown Title'
+        const promises = this.stations.map(station =>
+          axios.get(station.endpoint)
+            .then(response => {
+              const songData = this.findKeyValueInObject(response.data, 'nowOnAirItem')
+              if (songData && songData.title) {
+                this.stationSongData[station.id] = {
+                  artist: songData.artist || 'Unknown Artist',
+                  title: songData.title || 'Unknown Title'
+                }
               }
-            }
-          } catch (error) {
-            console.error(`Error fetching data for ${station.name}:`, error)
-          }
-        }
+            })
+            .catch(error => {
+              console.error(`Error fetching data for station ${station.id}:`, error)
+            })
+        )
+        await Promise.all(promises)
       } catch (error) {
         console.error('Error fetching all stations:', error)
       }
