@@ -44,7 +44,7 @@ export const useRadioStore = defineStore('radio', {
     currentStationIndex: 0,
     originalStationIndex: 0,
     isPlaying: false,
-    dislikes: ['Freek', 'Toerist Le MC', 'Bazart'],
+    dislikes: ['Freek', 'Toerist Le MC', 'Bazart', 'Milow', 'Metejoor'],
     preferredStations: [],
     currentSongData: {
       artist: null,
@@ -65,7 +65,15 @@ export const useRadioStore = defineStore('radio', {
     },
     currentSongInfo: (state) => state.currentSongData,
     getStationSongInfo: (state) => (stationId) => state.stationSongData[stationId] || { artist: null, title: null },
-    isDiskliked: (state) => (artist) => state.dislikes.some(dislike => artist?.includes(dislike)),
+    isDiskliked: (state) => (artist, title) => {
+      const normalize = (value) => (value || '').toLowerCase()
+      const artistValue = normalize(artist)
+      const titleValue = normalize(title)
+      return state.dislikes.some((dislike) => {
+        const needle = normalize(dislike)
+        return needle && (artistValue.includes(needle) || titleValue.includes(needle))
+      })
+    },
     orderedPreferredStations: (state) => state.preferredStations.map(id => state.stations.find(s => s.id === id)).filter(Boolean),
     isPreferredStation: (state) => (stationId) => state.preferredStations.includes(stationId)
   },
@@ -88,15 +96,16 @@ export const useRadioStore = defineStore('radio', {
 
         if (songData) {
           const rawArtist = songData.artist || songData.author || null
+          const rawTitle = songData.title || songData.program?.title || songData.broadcast?.title || null
           const displayArtist = rawArtist || 'Unknown Artist'
-          const displayTitle = songData.title || songData.program?.title || songData.broadcast?.title || 'Unknown Title'
+          const displayTitle = rawTitle || 'Unknown Title'
 
           this.currentSongData = {
             artist: displayArtist,
             title: displayTitle
           }
 
-          if (rawArtist && this.isDiskliked(rawArtist)) {
+          if (this.isDiskliked(rawArtist, rawTitle)) {
             this.isPlaying = true
             if (this.preferredStations.length > 0) {
               this.skipToNextPreferred()

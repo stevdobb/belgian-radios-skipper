@@ -92,8 +92,19 @@
             </button>
           </div>
 
-          <div class="text-center text-gray-600 dark:text-slate-300 text-xs sm:text-sm font-medium">
-            {{ radioStore.isPlaying ? 'Playing' : 'Paused' }}
+          <div class="flex flex-col items-center gap-2 text-center text-xs sm:text-sm font-medium">
+            <div class="text-gray-600 dark:text-slate-300">
+              {{ radioStore.isPlaying ? 'Playing' : 'Paused' }}
+            </div>
+            <button
+              v-if="isCastAvailable"
+              @click="startCasting"
+              class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-blue-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/60 text-gray-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors"
+              title="Cast to device"
+            >
+              <SignalIcon class="w-4 h-4" />
+              <span>{{ isCasting ? 'Casting' : 'Cast' }}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -236,6 +247,7 @@ import {
   ForwardIcon,
   MusicalNoteIcon,
   SparklesIcon,
+  SignalIcon,
   HandThumbDownIcon,
   XMarkIcon
 } from '@heroicons/vue/24/outline'
@@ -244,6 +256,12 @@ const radioStore = useRadioStore()
 const audioPlayer = ref(null)
 const dislikeInput = ref('')
 let refreshInterval = null
+let castInitTimer = null
+let castContext = null
+let remotePlayer = null
+let remotePlayerController = null
+const isCastAvailable = ref(false)
+const isCasting = ref(false)
 
 const attemptPlay = async () => {
   if (!audioPlayer.value) return
@@ -256,12 +274,133 @@ const attemptPlay = async () => {
   }
 }
 
+const loadCastStream = async (autoplay = true) => {
+  if (!castContext || typeof window === 'undefined') return
+  const session = castContext.getCurrentSession()
+  if (!session || !window.chrome?.cast?.media) return
+
+  const mediaInfo = new window.chrome.cast.media.MediaInfo(radioStore.currentStream, 'audio/mpeg')
+  const metadata = new window.chrome.cast.media.MusicTrackMediaMetadata()
+  metadata.title = radioStore.currentSongData.title || radioStore.currentStationName || 'Belgian Radio'
+  metadata.artist = radioStore.currentSongData.artist || radioStore.currentStationName || 'VRT'
+  metadata.albumName = radioStore.currentStationName || 'Belgian Radio'
+  mediaInfo.metadata = metadata
+
+  const request = new window.chrome.cast.media.LoadRequest(mediaInfo)
+  request.autoplay = autoplay
+
+  try {
+    await session.loadMedia(request)
+    radioStore.isPlaying = autoplay
+  } catch (error) {
+    console.error('Error casting media:', error)
+  }
+}
+
 const reloadStream = async (forcePlay = false) => {
+  if (isCasting.value) {
+    await loadCastStream(forcePlay || radioStore.isPlaying)
+    return
+  }
   if (!audioPlayer.value) return
   audioPlayer.value.load()
   if (forcePlay || radioStore.isPlaying) {
     await attemptPlay()
   }
+}
+
+const setupCastController = () => {
+  if (!window.cast?.framework) return
+  if (remotePlayer && remotePlayerController) return
+  remotePlayer = new window.cast.framework.RemotePlayer()
+  remotePlayerController = new window.cast.framework.RemotePlayerController(remotePlayer)
+  remotePlayerController.addEventListener(
+    window.cast.framework.RemotePlayerEventType.IS_PAUSED_CHANGED,
+    () => {
+      if (!isCasting.value) return
+      radioStore.isPlaying = !remotePlayer.isPaused
+    }
+  )
+}
+
+const startCasting = async () => {
+  if (!castContext) return
+  try {
+    await castContext.requestSession()
+  } catch (error) {
+    console.error('Cast session request failed:', error)
+  }
+}
+
+const toggleCastPlayback = async () => {
+  const session = castContext?.getCurrentSession()
+  if (!session) {
+    await startCasting()
+    return
+  }
+
+  const mediaSession = session.getMediaSession()
+  if (!mediaSession) {
+    await loadCastStream(true)
+    return
+  }
+
+  const isPlaying = mediaSession.playerState === window.chrome?.cast?.media?.PlayerState?.PLAYING
+  if (isPlaying) {
+    mediaSession.pause(null, () => {
+      radioStore.isPlaying = false
+    }, (error) => {
+      console.error('Error pausing cast:', error)
+    })
+  } else {
+    mediaSession.play(null, () => {
+      radioStore.isPlaying = true
+    }, (error) => {
+      console.error('Error playing cast:', error)
+    })
+  }
+}
+
+const initializeCast = () => {
+  if (typeof window === 'undefined') return false
+  if (!window.cast?.framework || !window.chrome?.cast) return false
+
+  castContext = window.cast.framework.CastContext.getInstance()
+  castContext.setOptions({
+    receiverApplicationId: window.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+    autoJoinPolicy: window.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+  })
+
+  castContext.addEventListener(
+    window.cast.framework.CastContextEventType.CAST_STATE_CHANGED,
+    (event) => {
+      isCastAvailable.value = event.castState !== window.cast.framework.CastState.NO_DEVICES_AVAILABLE
+    }
+  )
+
+  castContext.addEventListener(
+    window.cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
+    (event) => {
+      const { SessionState } = window.cast.framework
+      if (event.sessionState === SessionState.SESSION_STARTED || event.sessionState === SessionState.SESSION_RESUMED) {
+        isCasting.value = true
+        setupCastController()
+        if (audioPlayer.value) {
+          audioPlayer.value.pause()
+        }
+        loadCastStream(radioStore.isPlaying)
+      } else if (
+        event.sessionState === SessionState.SESSION_ENDED ||
+        event.sessionState === SessionState.SESSION_START_FAILED
+      ) {
+        isCasting.value = false
+        remotePlayer = null
+        remotePlayerController = null
+      }
+    }
+  )
+
+  return true
 }
 
 onMounted(async () => {
@@ -287,6 +426,20 @@ onMounted(async () => {
   setInterval(() => {
     radioStore.fetchAllStations()
   }, 30000)
+
+  if (!initializeCast()) {
+    window.__onGCastApiAvailable = (isAvailable) => {
+      if (isAvailable) {
+        initializeCast()
+      }
+    }
+    castInitTimer = setInterval(() => {
+      if (initializeCast()) {
+        clearInterval(castInitTimer)
+        castInitTimer = null
+      }
+    }, 500)
+  }
 })
 
 watch(
@@ -301,20 +454,31 @@ onUnmounted(() => {
   if (refreshInterval) {
     clearInterval(refreshInterval)
   }
+  if (castInitTimer) {
+    clearInterval(castInitTimer)
+  }
   if (audioPlayer.value) {
     audioPlayer.value.pause()
   }
 })
 
 const onPlay = () => {
-  radioStore.isPlaying = true
+  if (!isCasting.value) {
+    radioStore.isPlaying = true
+  }
 }
 
 const onPause = () => {
-  radioStore.isPlaying = false
+  if (!isCasting.value) {
+    radioStore.isPlaying = false
+  }
 }
 
 const togglePlayback = async () => {
+  if (isCasting.value) {
+    await toggleCastPlayback()
+    return
+  }
   if (!audioPlayer.value) return
 
   if (radioStore.isPlaying) {
