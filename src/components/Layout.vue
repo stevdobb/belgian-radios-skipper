@@ -1,8 +1,24 @@
 <!-- eslint-disable vue/multi-word-component-names -->
 <template>
   <div class="flex h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+    <!-- Mobile Menu Button -->
+    <button
+      @click="sidebarOpen = !sidebarOpen"
+      class="md:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg border border-gray-200 shadow-md"
+    >
+      <svg class="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+      </svg>
+    </button>
+
     <!-- Sidebar Navigation -->
-    <nav class="w-64 bg-white border-r border-gray-200 shadow-md flex flex-col">
+    <nav
+      :class="[
+        'bg-white border-r border-gray-200 shadow-md flex flex-col transition-all duration-300',
+        sidebarOpen ? 'w-64' : 'w-0 md:w-64',
+        'fixed md:relative h-full z-40'
+      ]"
+    >
       <div class="p-6 border-b border-gray-200">
         <div class="flex items-center space-x-2">
           <svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
@@ -14,11 +30,21 @@
 
       <div class="flex-1 flex flex-col justify-between p-6">
         <div class="space-y-2">
-          <RouterLink to="/" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors text-gray-700" :class="{ 'bg-blue-500 text-white': $route.path === '/' }">
+          <RouterLink
+            to="/"
+            @click="sidebarOpen = false"
+            class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors text-gray-700"
+            :class="{ 'bg-blue-500 text-white': $route.path === '/' }"
+          >
             <HomeIcon class="w-5 h-5" />
             <span>Home</span>
           </RouterLink>
-          <RouterLink to="/settings" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors text-gray-700" :class="{ 'bg-blue-500 text-white': $route.path === '/settings' }">
+          <RouterLink
+            to="/settings"
+            @click="sidebarOpen = false"
+            class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors text-gray-700"
+            :class="{ 'bg-blue-500 text-white': $route.path === '/settings' }"
+          >
             <CogIcon class="w-5 h-5" />
             <span>Settings</span>
           </RouterLink>
@@ -31,12 +57,19 @@
       </div>
     </nav>
 
+    <!-- Sidebar Overlay (Mobile) -->
+    <div
+      v-if="sidebarOpen"
+      @click="sidebarOpen = false"
+      class="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+    ></div>
+
     <!-- Main Content -->
     <div class="flex-1 flex flex-col overflow-hidden">
       <!-- Header -->
-      <header class="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
+      <header class="bg-white border-b border-gray-200 px-4 md:px-6 py-4 shadow-sm">
         <div class="flex items-center justify-between">
-          <h2 class="text-2xl font-bold text-gray-900">{{ headerTitle }}</h2>
+          <h2 class="text-xl md:text-2xl font-bold text-gray-900 ml-12 md:ml-0">{{ headerTitle }}</h2>
           <div class="flex items-center space-x-4">
             <button @click="toggleInfo" class="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-gray-900">
               <InformationCircleIcon class="w-6 h-6" />
@@ -60,6 +93,7 @@ import { HomeIcon, CogIcon, InformationCircleIcon } from '@heroicons/vue/24/outl
 
 const route = useRoute()
 const showInfo = ref(false)
+const sidebarOpen = ref(false)
 
 const headerTitle = computed(() => {
   switch (route.path) {
