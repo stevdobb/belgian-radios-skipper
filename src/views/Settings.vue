@@ -29,8 +29,15 @@
             <label class="text-gray-900 dark:text-slate-100 font-medium">Auto-play</label>
             <p class="text-gray-600 dark:text-slate-300 text-sm mt-1">Automatically start playing when opening app</p>
           </div>
-          <div class="relative inline-block w-14 h-8 bg-blue-600 rounded-full cursor-pointer" @click="toggleAutoplay">
-            <div class="absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md transition-all duration-300 transform translate-x-6"></div>
+          <div
+            class="relative inline-block w-14 h-8 rounded-full cursor-pointer"
+            :class="radioStore.autoPlay ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-700'"
+            @click="toggleAutoplay"
+          >
+            <div
+              class="absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md transition-all duration-300 transform"
+              :style="{ transform: radioStore.autoPlay ? 'translateX(24px)' : 'translateX(0)' }"
+            ></div>
           </div>
         </div>
 
@@ -206,8 +213,8 @@ const toggleDarkMode = () => {
 }
 
 const toggleAutoplay = () => {
-  // This would typically save to localStorage
-  console.log('Autoplay toggled')
+  radioStore.autoPlay = !radioStore.autoPlay
+  radioStore.savePreferences()
 }
 
 const toggleAutoReturn = () => {

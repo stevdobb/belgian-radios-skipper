@@ -52,7 +52,8 @@ export const useRadioStore = defineStore('radio', {
     skipEnabled: true,
     skipAttemptCount: 0,
     maxPreferredSkips: null,
-    dislikes: ['Freek', 'Toerist Le MC', 'Bazart', 'Milow', 'Metejoor'],
+    autoPlay: false,
+    dislikes: ['Metejoor', 'Freek', 'Toerist Le MC', 'Bazart', 'Milow', 'Maksim', 'Niels Destadsbader'],
     preferredStations: [],
     autoReturn: true,
     telemetry: [],
@@ -321,6 +322,7 @@ export const useRadioStore = defineStore('radio', {
       localStorage.setItem('autoReturn', JSON.stringify(this.autoReturn))
       localStorage.setItem('skipEnabled', JSON.stringify(this.skipEnabled))
       localStorage.setItem('maxPreferredSkips', JSON.stringify(this.maxPreferredSkips))
+      localStorage.setItem('autoPlay', JSON.stringify(this.autoPlay))
     },
 
     loadPreferences() {
@@ -350,6 +352,14 @@ export const useRadioStore = defineStore('radio', {
           this.maxPreferredSkips = JSON.parse(savedMax)
         } catch (e) {
           this.maxPreferredSkips = null
+        }
+      }
+      const savedAutoPlay = localStorage.getItem('autoPlay')
+      if (savedAutoPlay !== null) {
+        try {
+          this.autoPlay = JSON.parse(savedAutoPlay)
+        } catch (e) {
+          this.autoPlay = false
         }
       }
     },

@@ -518,7 +518,9 @@ onMounted(async () => {
 
   // Auto-play
   await nextTick()
-  await reloadStream(true)
+  if (radioStore.autoPlay) {
+    await reloadStream(true)
+  }
 
   // Refresh current song info every 15 seconds
   refreshInterval = setInterval(() => {
