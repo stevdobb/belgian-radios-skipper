@@ -277,9 +277,9 @@
   <!-- Toasts -->
   <div class="fixed bottom-4 right-4 flex flex-col items-end space-y-2 z-50">
     <TransitionGroup name="toast" tag="div">
-      <div v-for="toast in toasts" :key="toast.id" class="max-w-xs w-full">
+      <div v-for="(toast, idx) in toasts" :key="toast.id" class="max-w-xs w-full" :style="{ transitionDelay: `${idx * 60}ms` }">
         <div :class="[
-          'px-3 py-2 rounded-lg shadow-md text-sm',
+          'px-3 py-2 rounded-lg shadow-md text-sm transform-gpu',
           toast.type === 'error' ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' :
           toast.type === 'warn' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
           toast.type === 'success' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
@@ -656,10 +656,14 @@ const removeDislike = (index) => {
 }
 
 .toast-enter-from, .toast-leave-to {
-  transform: translateY(8px);
+  transform: translateX(12px) scale(.98);
   opacity: 0;
 }
+.toast-enter-to, .toast-leave-from {
+  transform: translateX(0) scale(1);
+  opacity: 1;
+}
 .toast-enter-active, .toast-leave-active {
-  transition: all 240ms ease;
+  transition: transform 280ms cubic-bezier(.2,.8,.2,1), opacity 280ms cubic-bezier(.2,.8,.2,1);
 }
 </style>
