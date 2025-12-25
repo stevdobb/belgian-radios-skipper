@@ -30,6 +30,11 @@
             <h2 class="text-xl sm:text-2xl md:text-4xl font-bold text-gray-900 dark:text-slate-100 mb-2 line-clamp-2">
               {{ radioStore.currentStationName || 'Loading...' }}
             </h2>
+            <div v-if="radioStore.isSkipping" class="mb-2">
+              <span class="inline-flex items-center gap-2 px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded-full text-xs font-medium">
+                Skipping — {{ radioStore.stations[radioStore.originalStationIndex]?.shortName || 'orig' }}
+              </span>
+            </div>
             <div class="space-y-3 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-blue-200 dark:border-slate-700">
               <template v-if="currentSongInfo.artist || currentSongInfo.title">
                 <div class="flex items-start space-x-3 md:space-x-4 text-left">
@@ -269,6 +274,22 @@
       </div>
     </div>
   </div>
+  <!-- Toasts -->
+  <div class="fixed bottom-4 right-4 flex flex-col items-end space-y-2 z-50">
+    <TransitionGroup name="toast" tag="div">
+      <div v-for="toast in toasts" :key="toast.id" class="max-w-xs w-full">
+        <div :class="[
+          'px-3 py-2 rounded-lg shadow-md text-sm',
+          toast.type === 'error' ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' :
+          toast.type === 'warn' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
+          toast.type === 'success' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+          'bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100'
+        ]">
+          {{ toast.message }}
+        </div>
+      </div>
+    </TransitionGroup>
+  </div>
 </template>
 
 <script setup>
@@ -296,6 +317,7 @@ let castInitTimer = null
 let castContext = null
 let remotePlayer = null
 let remotePlayerController = null
+let originalCheckInterval = null
 const isCastAvailable = ref(false)
 const isCasting = ref(false)
 const volume = ref(1)
@@ -320,6 +342,34 @@ const attemptPlay = async () => {
   }
 }
 
+// Toasts
+const toasts = ref([])
+const pushToast = (message, type = 'info') => {
+  const id = Date.now() + Math.random()
+  toasts.value.push({ id, message, type })
+  setTimeout(() => {
+    const idx = toasts.value.findIndex(t => t.id === id)
+    if (idx > -1) toasts.value.splice(idx, 1)
+  }, 4000)
+}
+
+// Watch telemetry for notable events and show toasts
+watch(() => radioStore.telemetry.slice(0, 5), (newVal, oldVal) => {
+  if (!oldVal || newVal.length === 0) return
+  const latest = newVal[0]
+  if (!latest) return
+  if (['skip','return','cast_session','cast_error','skip_disabled'].includes(latest.type)) {
+    const msgMap = {
+      skip: 'Skipping to preferred station',
+      return: 'Returning to original station',
+      cast_session: 'Cast session changed',
+      cast_error: 'Cast error',
+      skip_disabled: 'Skipping disabled'
+    }
+    pushToast(msgMap[latest.type] || latest.message)
+  }
+}, { deep: true })
+
 const loadCastStream = async (autoplay = true) => {
   if (!castContext || typeof window === 'undefined') return
   const session = castContext.getCurrentSession()
@@ -340,6 +390,7 @@ const loadCastStream = async (autoplay = true) => {
     radioStore.isPlaying = autoplay
   } catch (error) {
     console.error('Error casting media:', error)
+    radioStore.logTelemetry('cast_error', String(error?.message || error))
   }
 }
 
@@ -375,6 +426,7 @@ const startCasting = async () => {
     await castContext.requestSession()
   } catch (error) {
     console.error('Cast session request failed:', error)
+    radioStore.logTelemetry('cast_session_error', String(error?.message || error))
   }
 }
 
@@ -397,12 +449,14 @@ const toggleCastPlayback = async () => {
       radioStore.isPlaying = false
     }, (error) => {
       console.error('Error pausing cast:', error)
+      radioStore.logTelemetry('cast_pause_error', String(error?.message || error))
     })
   } else {
     mediaSession.play(null, () => {
       radioStore.isPlaying = true
     }, (error) => {
       console.error('Error playing cast:', error)
+      radioStore.logTelemetry('cast_play_error', String(error?.message || error))
     })
   }
 }
@@ -435,6 +489,7 @@ const initializeCast = () => {
           audioPlayer.value.pause()
         }
         loadCastStream(radioStore.isPlaying)
+        radioStore.logTelemetry('cast_session', 'started')
       } else if (
         event.sessionState === SessionState.SESSION_ENDED ||
         event.sessionState === SessionState.SESSION_START_FAILED
@@ -442,6 +497,7 @@ const initializeCast = () => {
         isCasting.value = false
         remotePlayer = null
         remotePlayerController = null
+        radioStore.logTelemetry('cast_session', 'ended')
       }
     }
   )
@@ -452,6 +508,7 @@ const initializeCast = () => {
 onMounted(async () => {
   radioStore.loadDislikes()
   radioStore.loadPreferences()
+  radioStore.loadTelemetry()
   
   // Fetch current song first (don't wait for all stations)
   radioStore.fetchCurrentSong()
@@ -466,12 +523,25 @@ onMounted(async () => {
   // Refresh current song info every 15 seconds
   refreshInterval = setInterval(() => {
     radioStore.fetchCurrentSong()
-  }, 15000)
+  }, 10000)
   
-  // Refresh all stations info every 30 seconds
+  // Adaptive full-stations refresh: every 10s while skipping, otherwise every 30s
+  let lastFullFetch = Date.now()
   setInterval(() => {
-    radioStore.fetchAllStations()
-  }, 30000)
+    const now = Date.now()
+    const shouldFetch = radioStore.isSkipping || (now - lastFullFetch) > 30000
+    if (shouldFetch) {
+      radioStore.fetchAllStations()
+      lastFullFetch = now
+    }
+  }, 10000)
+
+  // Monitor original station more frequently while skipping (only check when skipping)
+  originalCheckInterval = setInterval(() => {
+    if (radioStore.isSkipping) {
+      radioStore.checkOriginalStation()
+    }
+  }, 5000)
 
   if (!initializeCast()) {
     window.__onGCastApiAvailable = (isAvailable) => {
@@ -503,6 +573,9 @@ onUnmounted(() => {
   if (castInitTimer) {
     clearInterval(castInitTimer)
   }
+    if (originalCheckInterval) {
+      clearInterval(originalCheckInterval)
+    }
   if (audioPlayer.value) {
     audioPlayer.value.pause()
   }
@@ -580,5 +653,13 @@ const removeDislike = (index) => {
 .slide-fade-leave-to {
   transform: translateX(10px);
   opacity: 0;
+}
+
+.toast-enter-from, .toast-leave-to {
+  transform: translateY(8px);
+  opacity: 0;
+}
+.toast-enter-active, .toast-leave-active {
+  transition: all 240ms ease;
 }
 </style>

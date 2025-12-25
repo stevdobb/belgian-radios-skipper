@@ -68,7 +68,7 @@
     ></div>
 
     <!-- Main Content -->
-    <div class="flex-1 flex flex-col overflow-hidden">
+    <div class="flex-1 flex flex-col overflow-hidden pt-12 md:pt-0">
       <!-- Header -->
       <!-- <header class="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-4 md:px-6 py-4 shadow-sm">
         <div class="flex items-center justify-between">

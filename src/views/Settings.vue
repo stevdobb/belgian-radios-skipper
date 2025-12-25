@@ -33,6 +33,59 @@
             <div class="absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md transition-all duration-300 transform translate-x-6"></div>
           </div>
         </div>
+
+        <!-- Auto-return Toggle -->
+        <div class="flex items-center justify-between pt-4 border-t border-blue-200 dark:border-slate-700">
+          <div>
+            <label class="text-gray-900 dark:text-slate-100 font-medium">Auto-return after skip</label>
+            <p class="text-gray-600 dark:text-slate-300 text-sm mt-1">Automatically return to the original station when the disliked song ends</p>
+          </div>
+          <div class="relative inline-block w-14 h-8 bg-gray-300 dark:bg-slate-700 rounded-full cursor-pointer" @click="toggleAutoReturn">
+            <div
+              class="absolute top-1 left-1 w-6 h-6 bg-white dark:bg-slate-100 rounded-full shadow-md transition-all duration-300 transform"
+              :style="{ transform: radioStore.autoReturn ? 'translateX(24px)' : 'translateX(0)' }"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Skipping Enabled Toggle -->
+        <div class="flex items-center justify-between pt-4 border-t border-blue-200 dark:border-slate-700">
+          <div>
+            <label class="text-gray-900 dark:text-slate-100 font-medium">Enable automatic skipping</label>
+            <p class="text-gray-600 dark:text-slate-300 text-sm mt-1">When enabled, disliked songs will trigger automatic skipping</p>
+          </div>
+          <div class="relative inline-block w-14 h-8 bg-gray-300 dark:bg-slate-700 rounded-full cursor-pointer" @click="toggleSkipEnabled">
+            <div
+              class="absolute top-1 left-1 w-6 h-6 bg-white dark:bg-slate-100 rounded-full shadow-md transition-all duration-300 transform"
+              :style="{ transform: radioStore.skipEnabled ? 'translateX(24px)' : 'translateX(0)' }"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Max preferred skips -->
+        <div class="flex items-center justify-between pt-4 border-t border-blue-200 dark:border-slate-700">
+          <div>
+            <label class="text-gray-900 dark:text-slate-100 font-medium">Max preferred skips</label>
+            <p class="text-gray-600 dark:text-slate-300 text-sm mt-1">How many preferred stations to try before returning (empty = all)</p>
+          </div>
+          <input
+            type="number"
+            min="1"
+            v-model.number="radioStore.maxPreferredSkips"
+            @change="radioStore.savePreferences()"
+            placeholder="(all)"
+            class="w-20 bg-white dark:bg-slate-900 border border-blue-200 dark:border-slate-700 rounded-lg px-2 py-1 text-sm text-gray-900 dark:text-slate-100"
+          />
+        </div>
+
+        <!-- Export telemetry CSV -->
+        <div class="flex items-center justify-between pt-4 border-t border-blue-200 dark:border-slate-700">
+          <div>
+            <label class="text-gray-900 dark:text-slate-100 font-medium">Telemetry export</label>
+            <p class="text-gray-600 dark:text-slate-300 text-sm mt-1">Download recent telemetry as CSV for debugging</p>
+          </div>
+          <button @click="exportTelemetryCsv" class="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm">Export</button>
+        </div>
       </div>
     </div>
 
@@ -108,6 +161,28 @@
         </div>
       </div>
     </div>
+
+    <!-- Telemetry Card -->
+    <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl p-6 border border-blue-200 dark:border-slate-700 shadow-lg">
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-4 flex items-center space-x-2">
+        <SparklesIcon class="w-6 h-6" />
+        <span>Telemetry</span>
+      </h3>
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-gray-600 dark:text-slate-300">Recent events</div>
+          <button @click="clearTelemetry" class="text-xs text-red-600 hover:underline">Clear</button>
+        </div>
+        <div class="max-h-48 overflow-auto text-xs text-gray-700 dark:text-slate-200">
+          <div v-if="radioStore.telemetry.length === 0" class="italic text-gray-500 dark:text-slate-400">No telemetry yet</div>
+          <div v-for="(entry, idx) in radioStore.telemetry.slice(0,10)" :key="idx" class="py-1 border-b border-gray-100 dark:border-slate-800">
+            <div class="text-[11px] font-medium">{{ entry.type }}</div>
+            <div class="text-[11px] text-gray-600 dark:text-slate-300">{{ entry.message }}</div>
+            <div class="text-[10px] text-gray-400 dark:text-slate-500">{{ entry.time }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -133,6 +208,39 @@ const toggleDarkMode = () => {
 const toggleAutoplay = () => {
   // This would typically save to localStorage
   console.log('Autoplay toggled')
+}
+
+const toggleAutoReturn = () => {
+  radioStore.autoReturn = !radioStore.autoReturn
+  radioStore.savePreferences()
+}
+
+const clearTelemetry = () => {
+  if (confirm('Clear telemetry events?')) {
+    radioStore.clearTelemetry()
+  }
+}
+
+const toggleSkipEnabled = () => {
+  radioStore.skipEnabled = !radioStore.skipEnabled
+  radioStore.savePreferences()
+}
+
+const exportTelemetryCsv = () => {
+  const entries = radioStore.telemetry || []
+  if (!entries.length) {
+    alert('No telemetry to export')
+    return
+  }
+  const rows = entries.map(e => [e.time, e.type, (e.message || '').replace(/\n/g, ' ')])
+  const csv = ['time,type,message', ...rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(','))].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `telemetry_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 const clearDisliked = () => {
