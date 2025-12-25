@@ -50,9 +50,12 @@
           </RouterLink>
         </div>
 
-        <div class="text-gray-500 dark:text-slate-400 text-xs">
-          <p>Belgian Radio Player</p>
-          <p class="mt-2">© 2025</p>
+        <div class="space-y-4">
+          <CastVolume />
+          <div class="text-gray-500 dark:text-slate-400 text-xs">
+            <p>Belgian Radio Player</p>
+            <p class="mt-2">© 2025</p>
+          </div>
         </div>
       </div>
     </nav>
@@ -89,6 +92,7 @@
 <script setup>
 import { ref } from 'vue'
 import { HomeIcon, CogIcon } from '@heroicons/vue/24/outline'
+import CastVolume from './CastVolume.vue'
 
 const sidebarOpen = ref(false)
 </script>
