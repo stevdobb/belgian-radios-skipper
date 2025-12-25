@@ -11,7 +11,8 @@ export const useRadioStore = defineStore('radio', {
         stream: 'https://vrt.streamabc.net/vrt-studiobrussel-mp3-128-4409118',
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-stubru',
         color: 'from-blue-500 to-blue-700',
-        icon: 'music'
+        icon: 'music',
+        songInfo: { artist: null, title: null, albumArt: null }
       },
       {
         id: 1,
@@ -20,7 +21,8 @@ export const useRadioStore = defineStore('radio', {
         stream: 'https://vrt.streamabc.net/vrt-mnm-mp3-128-9205274',
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-mnm',
         color: 'from-purple-500 to-purple-700',
-        icon: 'microphone'
+        icon: 'microphone',
+        songInfo: { artist: null, title: null, albumArt: null }
       },
       {
         id: 2,
@@ -29,7 +31,8 @@ export const useRadioStore = defineStore('radio', {
         stream: 'https://vrt.streamabc.net/vrt-zwaregitaren-mp3-128-2689110',
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-stubrubruut',
         color: 'from-red-500 to-red-700',
-        icon: 'heart'
+        icon: 'heart',
+        songInfo: { artist: null, title: null, albumArt: null }
       },
       {
         id: 3,
@@ -38,7 +41,8 @@ export const useRadioStore = defineStore('radio', {
         stream: 'https://vrt.streamabc.net/vrt-stubruvuurland-mp3-128-1929329',
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-stubru-vuurland',
         color: 'from-orange-500 to-orange-700',
-        icon: 'flame'
+        icon: 'flame',
+        songInfo: { artist: null, title: null, albumArt: null }
       }
     ],
     currentStationIndex: 0,
@@ -46,11 +50,6 @@ export const useRadioStore = defineStore('radio', {
     isPlaying: false,
     dislikes: ['Freek', 'Toerist Le MC', 'Bazart', 'Milow', 'Metejoor'],
     preferredStations: [],
-    currentSongData: {
-      artist: null,
-      title: null
-    },
-    stationSongData: {},
     songChangedTimeout: null,
     streamNonce: 0
   }),
@@ -63,8 +62,7 @@ export const useRadioStore = defineStore('radio', {
       const separator = stream.includes('?') ? '&' : '?'
       return `${stream}${separator}t=${state.streamNonce}`
     },
-    currentSongInfo: (state) => state.currentSongData,
-    getStationSongInfo: (state) => (stationId) => state.stationSongData[stationId] || { artist: null, title: null },
+    currentSongInfo: (state) => state.stations[state.currentStationIndex]?.songInfo,
     isDiskliked: (state) => (artist, title) => {
       const normalize = (value) => (value || '').toLowerCase()
       const artistValue = normalize(artist)
@@ -83,30 +81,40 @@ export const useRadioStore = defineStore('radio', {
       this.originalStationIndex = index
       this.currentStationIndex = index
       this.isPlaying = true
-      this.currentSongData = { artist: null, title: null }
+      if (this.currentStation) {
+        this.currentStation.songInfo = { artist: null, title: null, albumArt: null }
+      }
       this.streamNonce += 1
       this.fetchCurrentSong()
     },
 
     async fetchCurrentSong() {
+      if (!this.currentStation) return
+
       try {
         const station = this.currentStation
         const response = await axios.get(station.endpoint)
-        const songData = this.findKeyValueInObject(response.data, 'nowOnAirItem')
+        const scheduleItem = response.data.schedule?.find(item => item.nowOnAirItem)
+        const songData = scheduleItem?.nowOnAirItem
 
         if (songData) {
-          const rawArtist = songData.artist || songData.author || null
-          const rawTitle = songData.title || songData.program?.title || songData.broadcast?.title || null
-          const displayArtist = rawArtist || 'Unknown Artist'
-          const displayTitle = rawTitle || 'Unknown Title'
+          const rawArtist = songData.artist || songData.author
+          const rawTitle = songData.title || songData.program?.title || songData.broadcast?.title
+          
+          const imageLinks = songData.imageLinks || songData.program?.imageLinks || songData.broadcast?.imageLinks || []
+          const albumArt = 
+            imageLinks.find(img => img.type === 'VRTMAX_RADIO_COVER')?.url ||
+            imageLinks.find(img => img.type === 'SQUARE')?.url ||
+            imageLinks.find(img => img.type === 'FULL_HD')?.url ||
+            imageLinks[0]?.url
 
-          this.currentSongData = {
-            artist: displayArtist,
-            title: displayTitle
+          station.songInfo = {
+            artist: rawArtist,
+            title: rawTitle,
+            albumArt: albumArt
           }
 
           if (this.isDiskliked(rawArtist, rawTitle)) {
-            this.isPlaying = true
             if (this.preferredStations.length > 0) {
               this.skipToNextPreferred()
             } else {
@@ -114,35 +122,48 @@ export const useRadioStore = defineStore('radio', {
             }
           }
         } else {
-          this.currentSongData = { artist: null, title: null }
+          station.songInfo = { artist: null, title: null, albumArt: null }
         }
       } catch (error) {
-        console.error('Error fetching current song:', error)
-        this.currentSongData = { artist: null, title: null }
+        console.error(`Error fetching song for ${this.currentStation.name}:`, error)
+        if (this.currentStation) {
+          this.currentStation.songInfo = { artist: null, title: null, albumArt: null }
+        }
       }
     },
 
     async fetchAllStations() {
-      try {
-        const promises = this.stations.map(station =>
-          axios.get(station.endpoint)
-            .then(response => {
-              const songData = this.findKeyValueInObject(response.data, 'nowOnAirItem')
-              if (songData && songData.title) {
-                this.stationSongData[station.id] = {
-                  artist: songData.artist || 'Unknown Artist',
-                  title: songData.title || 'Unknown Title'
-                }
-              }
-            })
-            .catch(error => {
-              console.error(`Error fetching data for station ${station.id}:`, error)
-            })
-        )
-        await Promise.all(promises)
-      } catch (error) {
-        console.error('Error fetching all stations:', error)
-      }
+      const promises = this.stations.map(async (station) => {
+        try {
+          const response = await axios.get(station.endpoint)
+          const scheduleItem = response.data.schedule?.find(item => item.nowOnAirItem)
+          const songData = scheduleItem?.nowOnAirItem
+
+          if (songData) {
+            const rawArtist = songData.artist || songData.author
+            const rawTitle = songData.title || songData.program?.title || songData.broadcast?.title
+
+            const imageLinks = songData.imageLinks || songData.program?.imageLinks || songData.broadcast?.imageLinks || []
+            const albumArt = 
+              imageLinks.find(img => img.type === 'VRTMAX_RADIO_COVER')?.url ||
+              imageLinks.find(img => img.type === 'SQUARE')?.url ||
+              imageLinks.find(img => img.type === 'FULL_HD')?.url ||
+              imageLinks[0]?.url
+
+            station.songInfo = {
+              artist: rawArtist,
+              title: rawTitle,
+              albumArt: albumArt
+            }
+          } else {
+            station.songInfo = { artist: null, title: null, albumArt: null }
+          }
+        } catch (error) {
+          console.error(`Error fetching data for station ${station.name}:`, error)
+          station.songInfo = { artist: null, title: null, albumArt: null }
+        }
+      })
+      await Promise.all(promises)
     },
 
     addDislike(artist) {
@@ -170,7 +191,9 @@ export const useRadioStore = defineStore('radio', {
 
     skipStation() {
       this.currentStationIndex = (this.currentStationIndex + 1) % this.stations.length
-      this.currentSongData = { artist: null, title: null }
+      if (this.currentStation) {
+        this.currentStation.songInfo = { artist: null, title: null, albumArt: null }
+      }
       this.streamNonce += 1
       this.fetchCurrentSong()
     },
@@ -184,14 +207,18 @@ export const useRadioStore = defineStore('radio', {
       const currentIndex = this.preferredStations.indexOf(this.currentStationIndex)
       let nextIndex = (currentIndex + 1) % this.preferredStations.length
       this.currentStationIndex = this.preferredStations[nextIndex]
-      this.currentSongData = { artist: null, title: null }
+      if (this.currentStation) {
+        this.currentStation.songInfo = { artist: null, title: null, albumArt: null }
+      }
       this.streamNonce += 1
       this.fetchCurrentSong()
     },
 
     returnToOriginalStation() {
       this.currentStationIndex = this.originalStationIndex
-      this.currentSongData = { artist: null, title: null }
+      if (this.currentStation) {
+        this.currentStation.songInfo = { artist: null, title: null, albumArt: null }
+      }
       this.streamNonce += 1
       this.fetchCurrentSong()
     },
@@ -222,19 +249,5 @@ export const useRadioStore = defineStore('radio', {
       }
     },
 
-    findKeyValueInObject(obj, key) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        return obj[key]
-      }
-      for (const k in obj) {
-        if (obj[k] !== null && typeof obj[k] === 'object') {
-          const result = this.findKeyValueInObject(obj[k], key)
-          if (result !== null) {
-            return result
-          }
-        }
-      }
-      return null
-    }
   }
 })

@@ -2,7 +2,7 @@
 <template>
   <div class="space-y-4 md:space-y-6 pb-4 md:pb-6">
     <!-- Now Playing Section -->
-    <div class="px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6">
+    <div v-if="radioStore.currentStation" class="px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6">
       <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-8 border border-blue-200 dark:border-slate-700 shadow-lg">
         <div class="flex items-center justify-between gap-3 mb-3 md:mb-4">
           <div class="text-blue-600 dark:text-blue-300 text-xs md:text-sm font-semibold uppercase tracking-wider">
@@ -19,39 +19,63 @@
             />
           </button>
         </div>
-        <h2 class="text-xl sm:text-2xl md:text-4xl font-bold text-gray-900 dark:text-slate-100 mb-2 line-clamp-2">
-          {{ radioStore.currentStationName || 'Loading...' }}
-        </h2>
-        <div class="space-y-3 mt-3 sm:mt-4 md:mt-6 pt-3 sm:pt-4 md:pt-6 border-t border-blue-200 dark:border-slate-700">
-          <template v-if="radioStore.currentSongData.artist || radioStore.currentSongData.title">
-            <div class="flex items-start space-x-3 md:space-x-4">
-              <div class="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center flex-shrink-0">
-                <MusicalNoteIcon class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-blue-600 dark:text-blue-300 text-xs font-semibold uppercase mb-1">Artist</p>
-                <p class="text-gray-900 dark:text-slate-100 text-base sm:text-lg md:text-xl font-bold line-clamp-2 break-words">{{ radioStore.currentSongData.artist || 'Unknown Artist' }}</p>
+        
+        <div class="flex flex-col md:flex-row gap-6 items-center md:items-start">
+          <!-- Album Art -->
+          <div v-if="albumArt" class="flex-shrink-0">
+            <img :src="albumArt" alt="Album Art" class="w-40 h-40 rounded-xl shadow-lg object-cover bg-blue-50 dark:bg-slate-800 border border-blue-100 dark:border-slate-700" />
+          </div>
+
+          <div class="flex-1 min-w-0 w-full text-center md:text-left">
+            <h2 class="text-xl sm:text-2xl md:text-4xl font-bold text-gray-900 dark:text-slate-100 mb-2 line-clamp-2">
+              {{ radioStore.currentStationName || 'Loading...' }}
+            </h2>
+            <div class="space-y-3 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-blue-200 dark:border-slate-700">
+              <template v-if="currentSongInfo.artist || currentSongInfo.title">
+                <div class="flex items-start space-x-3 md:space-x-4 text-left">
+                  <div class="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <MusicalNoteIcon class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-blue-600 dark:text-blue-300 text-xs font-semibold uppercase mb-1">Artist</p>
+                    <Transition name="slide-fade" mode="out-in">
+                      <p 
+                        :key="currentSongInfo.artist"
+                        class="text-gray-900 dark:text-slate-100 text-base sm:text-lg md:text-xl font-bold line-clamp-2 break-words"
+                      >
+                        {{ currentSongInfo.artist || 'Unknown Artist' }}
+                      </p>
+                    </Transition>
+                  </div>
+                </div>
+                <div class="flex items-start space-x-3 md:space-x-4 text-left">
+                  <div class="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <SparklesIcon class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-blue-600 dark:text-blue-300 text-xs font-semibold uppercase mb-1">Song Title</p>
+                    <Transition name="slide-fade" mode="out-in">
+                      <p 
+                        :key="currentSongInfo.title"
+                        class="text-gray-900 dark:text-slate-100 text-base sm:text-lg md:text-xl font-bold line-clamp-2 break-words"
+                      >
+                        {{ currentSongInfo.title || 'Unknown Title' }}
+                      </p>
+                    </Transition>
+                  </div>
+                </div>
+              </template>
+              <div v-else class="text-gray-600 dark:text-slate-300 text-sm italic">
+                No song info available
               </div>
             </div>
-            <div class="flex items-start space-x-3 md:space-x-4">
-              <div class="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg flex items-center justify-center flex-shrink-0">
-                <SparklesIcon class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-blue-600 dark:text-blue-300 text-xs font-semibold uppercase mb-1">Song Title</p>
-                <p class="text-gray-900 dark:text-slate-100 text-base sm:text-lg md:text-xl font-bold line-clamp-2 break-words">{{ radioStore.currentSongData.title || 'Unknown Title' }}</p>
-              </div>
-            </div>
-          </template>
-          <div v-else class="text-gray-600 dark:text-slate-300 text-sm italic">
-            No song info available
           </div>
         </div>
       </div>
     </div>
 
     <!-- Player Controls -->
-    <div class="px-3 sm:px-4 md:px-6">
+    <div v-if="radioStore.currentStation" class="px-3 sm:px-4 md:px-6">
       <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 border border-blue-200 dark:border-slate-700 shadow-lg">
         <div class="space-y-3 md:space-y-4">
           <audio
@@ -250,7 +274,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
 import { useRadioStore } from '../stores/radioStore'
 import StationCard from '../components/StationCard.vue'
 import {
@@ -278,6 +302,15 @@ const isCastAvailable = ref(false)
 const isCasting = ref(false)
 const volume = ref(1)
 
+const currentSongInfo = computed(() => {
+  const station = radioStore.stations.find(s => s.id === radioStore.currentStation?.id)
+  return station?.songInfo || {}
+})
+
+const albumArt = computed(() => {
+  return currentSongInfo.value?.albumArt
+})
+
 const attemptPlay = async () => {
   if (!audioPlayer.value) return
   try {
@@ -296,8 +329,8 @@ const loadCastStream = async (autoplay = true) => {
 
   const mediaInfo = new window.chrome.cast.media.MediaInfo(radioStore.currentStream, 'audio/mpeg')
   const metadata = new window.chrome.cast.media.MusicTrackMediaMetadata()
-  metadata.title = radioStore.currentSongData.title || radioStore.currentStationName || 'Belgian Radio'
-  metadata.artist = radioStore.currentSongData.artist || radioStore.currentStationName || 'VRT'
+  metadata.title = currentSongInfo.value.title || radioStore.currentStationName || 'Belgian Radio'
+  metadata.artist = currentSongInfo.value.artist || radioStore.currentStationName || 'VRT'
   metadata.albumName = radioStore.currentStationName || 'Belgian Radio'
   mediaInfo.metadata = metadata
 
@@ -535,5 +568,19 @@ const removeDislike = (index) => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-fade-leave-active {
+  transition: all 0.3s cubic-bezier(1, 0.5, 0.8, 1);
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateX(10px);
+  opacity: 0;
 }
 </style>
