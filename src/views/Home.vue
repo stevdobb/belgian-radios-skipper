@@ -92,6 +92,19 @@
             </button>
           </div>
 
+          <div class="flex items-center justify-center space-x-2 px-4 pt-2">
+            <SpeakerWaveIcon class="w-4 h-4 text-gray-500 dark:text-slate-400" />
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              v-model="volume"
+              @input="updateVolume"
+              class="w-full max-w-[150px] h-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600 hover:accent-blue-500"
+            />
+          </div>
+
           <div class="flex flex-col items-center gap-2 text-center text-xs sm:text-sm font-medium">
             <div class="text-gray-600 dark:text-slate-300">
               {{ radioStore.isPlaying ? 'Playing' : 'Paused' }}
@@ -249,7 +262,8 @@ import {
   SparklesIcon,
   SignalIcon,
   HandThumbDownIcon,
-  XMarkIcon
+  XMarkIcon,
+  SpeakerWaveIcon
 } from '@heroicons/vue/24/outline'
 
 const radioStore = useRadioStore()
@@ -262,6 +276,7 @@ let remotePlayer = null
 let remotePlayerController = null
 const isCastAvailable = ref(false)
 const isCasting = ref(false)
+const volume = ref(1)
 
 const attemptPlay = async () => {
   if (!audioPlayer.value) return
@@ -485,6 +500,12 @@ const togglePlayback = async () => {
     audioPlayer.value.pause()
   } else {
     await reloadStream(true)
+  }
+}
+
+const updateVolume = () => {
+  if (audioPlayer.value) {
+    audioPlayer.value.volume = volume.value
   }
 }
 
