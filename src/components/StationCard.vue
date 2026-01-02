@@ -22,20 +22,25 @@
       </div>
 
       <!-- Now Playing -->
-      <div class="space-y-3">
-        <div v-if="songInfo.artist || songInfo.title" class="space-y-2">
-          <div class="text-gray-700 dark:text-slate-300 text-xs sm:text-sm font-semibold uppercase tracking-wider">
-            Now Playing
-          </div>
-          <div v-if="songInfo.artist" class="text-gray-900 dark:text-slate-100 font-bold text-base sm:text-lg line-clamp-2">
-            {{ songInfo.artist }}
-          </div>
-          <div v-if="songInfo.title" class="text-gray-700 dark:text-slate-300 text-xs sm:text-sm line-clamp-2">
-            {{ songInfo.title }}
-          </div>
+      <div class="flex items-center space-x-4">
+        <div v-if="songInfo.albumArt" class="flex-shrink-0">
+          <img :src="songInfo.albumArt" alt="Album Art" class="w-16 h-16 rounded-lg shadow-md object-cover" />
         </div>
-        <div v-else class="text-gray-600 dark:text-slate-400 text-xs sm:text-sm italic">
-          No song playing now
+        <div class="flex-1 min-w-0">
+          <div v-if="songInfo.artist || songInfo.title" class="space-y-1">
+            <div class="text-gray-700 dark:text-slate-300 text-xs font-semibold uppercase tracking-wider">
+              Now Playing
+            </div>
+            <div v-if="songInfo.artist" class="text-gray-900 dark:text-slate-100 font-bold text-base line-clamp-2">
+              {{ songInfo.artist }}
+            </div>
+            <div v-if="songInfo.title" class="text-gray-700 dark:text-slate-300 text-xs line-clamp-2">
+              {{ songInfo.title }}
+            </div>
+          </div>
+          <div v-else class="text-gray-600 dark:text-slate-400 text-xs italic">
+            No song playing now
+          </div>
         </div>
       </div>
 
@@ -65,7 +70,7 @@ const emit = defineEmits(['select'])
 const radioStore = useRadioStore()
 
 const songInfo = computed(() => {
-  return radioStore.getStationSongInfo(props.station.id)
+  return props.station.songInfo || {}
 })
 
 const selectStation = () => {

@@ -2,7 +2,7 @@
 <template>
   <div class="space-y-4 md:space-y-6 pb-4 md:pb-6">
     <!-- Now Playing Section -->
-    <div class="px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6">
+    <div v-if="radioStore.currentStation" class="px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6">
       <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-8 border border-blue-200 dark:border-slate-700 shadow-lg">
         <div class="flex items-center justify-between gap-3 mb-3 md:mb-4">
           <div class="text-blue-600 dark:text-blue-300 text-xs md:text-sm font-semibold uppercase tracking-wider">
@@ -19,96 +19,133 @@
             />
           </button>
         </div>
-        <h2 class="text-xl sm:text-2xl md:text-4xl font-bold text-gray-900 dark:text-slate-100 mb-2 line-clamp-2">
-          {{ radioStore.currentStationName || 'Loading...' }}
-        </h2>
-        <div class="space-y-3 mt-3 sm:mt-4 md:mt-6 pt-3 sm:pt-4 md:pt-6 border-t border-blue-200 dark:border-slate-700">
-          <template v-if="radioStore.currentSongData.artist || radioStore.currentSongData.title">
-            <div class="flex items-start space-x-3 md:space-x-4">
-              <div class="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center flex-shrink-0">
-                <MusicalNoteIcon class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-blue-600 dark:text-blue-300 text-xs font-semibold uppercase mb-1">Artist</p>
-                <p class="text-gray-900 dark:text-slate-100 text-base sm:text-lg md:text-xl font-bold line-clamp-2 break-words">{{ radioStore.currentSongData.artist || 'Unknown Artist' }}</p>
+        
+        <div class="flex flex-col md:flex-row gap-6 items-center md:items-start">
+          <!-- Album Art -->
+          <div v-if="albumArt" class="flex-shrink-0">
+            <img :src="albumArt" alt="Album Art" class="w-40 h-40 rounded-xl shadow-lg object-cover bg-blue-50 dark:bg-slate-800 border border-blue-100 dark:border-slate-700" />
+          </div>
+
+          <div class="flex-1 min-w-0 w-full text-center md:text-left">
+            <h2 class="text-xl sm:text-2xl md:text-4xl font-bold text-gray-900 dark:text-slate-100 mb-2 line-clamp-2">
+              {{ radioStore.currentStationName || 'Loading...' }}
+            </h2>
+            <div v-if="radioStore.isSkipping" class="mb-2">
+              <span class="inline-flex items-center gap-2 px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded-full text-xs font-medium">
+                Skipping — {{ radioStore.stations[radioStore.originalStationIndex]?.shortName || 'orig' }}
+              </span>
+            </div>
+            <div class="space-y-3 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-blue-200 dark:border-slate-700">
+              <template v-if="currentSongInfo.artist || currentSongInfo.title">
+                <div class="flex items-start space-x-3 md:space-x-4 text-left">
+                  <div class="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <MusicalNoteIcon class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-blue-600 dark:text-blue-300 text-xs font-semibold uppercase mb-1">Artist</p>
+                    <Transition name="slide-fade" mode="out-in">
+                      <p 
+                        :key="currentSongInfo.artist"
+                        class="text-gray-900 dark:text-slate-100 text-base sm:text-lg md:text-xl font-bold line-clamp-2 break-words"
+                      >
+                        {{ currentSongInfo.artist || 'Unknown Artist' }}
+                      </p>
+                    </Transition>
+                  </div>
+                </div>
+                <div class="flex items-start space-x-3 md:space-x-4 text-left">
+                  <div class="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <SparklesIcon class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-blue-600 dark:text-blue-300 text-xs font-semibold uppercase mb-1">Song Title</p>
+                    <Transition name="slide-fade" mode="out-in">
+                      <p 
+                        :key="currentSongInfo.title"
+                        class="text-gray-900 dark:text-slate-100 text-base sm:text-lg md:text-xl font-bold line-clamp-2 break-words"
+                      >
+                        {{ currentSongInfo.title || 'Unknown Title' }}
+                      </p>
+                    </Transition>
+                  </div>
+                </div>
+              </template>
+              <div v-else class="text-gray-600 dark:text-slate-300 text-sm italic">
+                No song info available
               </div>
             </div>
-            <div class="flex items-start space-x-3 md:space-x-4">
-              <div class="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg flex items-center justify-center flex-shrink-0">
-                <SparklesIcon class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
+          </div>
+        </div>
+
+          <!-- Inline Player Controls moved into Now Playing -->
+          <div class="mt-4 pt-3 border-t border-blue-200 dark:border-slate-700">
+            <audio
+              ref="audioPlayer"
+              :src="radioStore.currentStream"
+              @play="onPlay"
+              @pause="onPause"
+              class="w-full"
+              crossorigin="anonymous"
+              preload="auto"
+            ></audio>
+
+            <div class="flex flex-col md:flex-row items-center md:items-center justify-between gap-3 mt-3">
+              <div class="flex items-center space-x-3">
+                <button
+                  @click="skipStation"
+                  class="p-2 md:p-2 hover:bg-blue-200 dark:hover:bg-slate-700 rounded-lg transition-colors text-gray-700 dark:text-slate-200 hover:text-gray-900 dark:hover:text-slate-100"
+                  title="Previous station"
+                >
+                  <BackwardIcon class="w-5 h-5" />
+                </button>
+
+                <button
+                  @click="togglePlayback"
+                  class="p-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-full transition-all shadow-lg"
+                >
+                  <component
+                    :is="radioStore.isPlaying ? PauseIcon : PlayIcon"
+                    class="w-6 h-6 text-white"
+                  />
+                </button>
+
+                <button
+                  @click="nextStation"
+                  class="p-2 md:p-2 hover:bg-blue-200 dark:hover:bg-slate-700 rounded-lg transition-colors text-gray-700 dark:text-slate-200 hover:text-gray-900 dark:hover:text-slate-100"
+                  title="Next station"
+                >
+                  <ForwardIcon class="w-5 h-5" />
+                </button>
               </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-blue-600 dark:text-blue-300 text-xs font-semibold uppercase mb-1">Song Title</p>
-                <p class="text-gray-900 dark:text-slate-100 text-base sm:text-lg md:text-xl font-bold line-clamp-2 break-words">{{ radioStore.currentSongData.title || 'Unknown Title' }}</p>
+
+              <div class="flex items-center space-x-3">
+                <SpeakerWaveIcon class="w-4 h-4 text-gray-500 dark:text-slate-400" />
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  v-model="volume"
+                  @input="updateVolume"
+                  class="w-36 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600 hover:accent-blue-500"
+                />
+                <div class="text-gray-600 dark:text-slate-300 text-sm font-medium">
+                  {{ radioStore.isPlaying ? 'Playing' : 'Paused' }}
+                </div>
+                <button
+                  v-if="isCastAvailable"
+                  @click="startCasting"
+                  class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-blue-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/60 text-gray-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors"
+                  title="Cast to device"
+                >
+                  <SignalIcon class="w-4 h-4" />
+                  <span class="text-sm">{{ isCasting ? 'Casting' : 'Cast' }}</span>
+                </button>
               </div>
             </div>
-          </template>
-          <div v-else class="text-gray-600 dark:text-slate-300 text-sm italic">
-            No song info available
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Player Controls -->
-    <div class="px-3 sm:px-4 md:px-6">
-      <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 border border-blue-200 dark:border-slate-700 shadow-lg">
-        <div class="space-y-3 md:space-y-4">
-          <audio
-            ref="audioPlayer"
-            :src="radioStore.currentStream"
-            @play="onPlay"
-            @pause="onPause"
-            class="w-full"
-            crossorigin="anonymous"
-            preload="auto"
-          ></audio>
-
-          <div class="flex items-center justify-center space-x-3 md:space-x-4">
-            <button
-              @click="skipStation"
-              class="p-3 md:p-3 hover:bg-blue-200 dark:hover:bg-slate-700 rounded-lg transition-colors text-gray-700 dark:text-slate-200 hover:text-gray-900 dark:hover:text-slate-100"
-              title="Previous station"
-            >
-              <BackwardIcon class="w-5 md:w-6 h-5 md:h-6" />
-            </button>
-
-            <button
-              @click="togglePlayback"
-              class="p-3 md:p-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-full transition-all shadow-lg"
-            >
-              <component
-                :is="radioStore.isPlaying ? PauseIcon : PlayIcon"
-                class="w-6 md:w-7 h-6 md:h-7 text-white"
-              />
-            </button>
-
-            <button
-              @click="nextStation"
-              class="p-3 md:p-3 hover:bg-blue-200 dark:hover:bg-slate-700 rounded-lg transition-colors text-gray-700 dark:text-slate-200 hover:text-gray-900 dark:hover:text-slate-100"
-              title="Next station"
-            >
-              <ForwardIcon class="w-5 md:w-6 h-5 md:h-6" />
-            </button>
-          </div>
-
-          <div class="flex flex-col items-center gap-2 text-center text-xs sm:text-sm font-medium">
-            <div class="text-gray-600 dark:text-slate-300">
-              {{ radioStore.isPlaying ? 'Playing' : 'Paused' }}
-            </div>
-            <button
-              v-if="isCastAvailable"
-              @click="startCasting"
-              class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-blue-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/60 text-gray-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors"
-              title="Cast to device"
-            >
-              <SignalIcon class="w-4 h-4" />
-              <span>{{ isCasting ? 'Casting' : 'Cast' }}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- Stations Grid -->
     <div class="px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
@@ -124,120 +161,139 @@
       </div>
     </div>
 
-    <!-- Preferred Stations -->
+    <!-- Preferred Stations + Dislike Management (responsive two-column on large screens) -->
     <div class="px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
-      <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 border border-blue-200 dark:border-slate-700 shadow-lg">
-        <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 mb-3 md:mb-4 flex items-center space-x-2">
-          <HandThumbDownIcon class="w-5 h-5" />
-          <span>Preferred Stations</span>
-        </h3>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div>
+          <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 border border-blue-200 dark:border-slate-700 shadow-lg h-full">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 mb-3 md:mb-4 flex items-center space-x-2">
+              <HandThumbDownIcon class="w-5 h-5" />
+              <span>Preferred Stations</span>
+            </h3>
 
-        <div class="space-y-3 md:space-y-4">
-          <p class="text-gray-600 dark:text-slate-300 text-xs sm:text-sm">When a disliked song plays, skip through these stations in order:</p>
-          
-          <div class="space-y-2">
-            <div v-if="radioStore.preferredStations.length > 0" class="space-y-2">
-              <div class="text-gray-700 dark:text-slate-200 text-xs sm:text-sm font-medium">Priority Order ({{ radioStore.preferredStations.length }}):</div>
-              <div class="space-y-2 max-h-48 overflow-y-auto">
-                <div
-                  v-for="(stationId, index) in radioStore.preferredStations"
-                  :key="stationId"
-                  class="bg-white dark:bg-slate-900 border border-blue-200 dark:border-slate-700 rounded-lg p-2.5 sm:p-3 flex items-center justify-between"
-                >
-                  <div class="flex items-center space-x-3 flex-1 min-w-0">
-                    <span class="bg-blue-500 text-white w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-semibold flex-shrink-0">{{ index + 1 }}</span>
-                    <span class="text-gray-900 dark:text-slate-100 text-sm sm:text-base font-medium truncate">{{ radioStore.stations.find(s => s.id === stationId)?.name }}</span>
+            <div class="space-y-3 md:space-y-4">
+              <p class="text-gray-600 dark:text-slate-300 text-xs sm:text-sm">When a disliked song plays, skip through these stations in order:</p>
+              
+              <div class="space-y-2">
+                <div v-if="radioStore.preferredStations.length > 0" class="space-y-2">
+                  <div class="text-gray-700 dark:text-slate-200 text-xs sm:text-sm font-medium">Priority Order ({{ radioStore.preferredStations.length }}):</div>
+                  <div class="space-y-2 max-h-48 overflow-y-auto">
+                    <div
+                      v-for="(stationId, index) in radioStore.preferredStations"
+                      :key="stationId"
+                      class="bg-white dark:bg-slate-900 border border-blue-200 dark:border-slate-700 rounded-lg p-2.5 sm:p-3 flex items-center justify-between"
+                    >
+                      <div class="flex items-center space-x-3 flex-1 min-w-0">
+                        <span class="bg-blue-500 text-white w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-semibold flex-shrink-0">{{ index + 1 }}</span>
+                        <span class="text-gray-900 dark:text-slate-100 text-sm sm:text-base font-medium truncate">{{ radioStore.stations.find(s => s.id === stationId)?.name }}</span>
+                      </div>
+                      <button
+                        @click="radioStore.togglePreferredStation(stationId)"
+                        class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors flex-shrink-0"
+                      >
+                        <XMarkIcon class="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
+                </div>
+                <div v-else class="text-gray-600 dark:text-slate-400 text-sm italic">
+                  No preferred stations selected
+                </div>
+              </div>
+
+              <div class="border-t border-blue-200 dark:border-slate-700 pt-4">
+                <p class="text-gray-600 dark:text-slate-300 text-xs sm:text-sm mb-3">Add stations to priority list:</p>
+                <div class="flex flex-wrap gap-2">
                   <button
-                    @click="radioStore.togglePreferredStation(stationId)"
-                    class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors flex-shrink-0"
+                    v-for="station in radioStore.stations"
+                    :key="station.id"
+                    @click="radioStore.togglePreferredStation(station.id)"
+                    :class="[
+                      'px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap',
+                      radioStore.isPreferredStation(station.id)
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-100 hover:bg-gray-300 dark:hover:bg-slate-600'
+                    ]"
                   >
-                    <XMarkIcon class="w-5 h-5" />
+                    {{ station.shortName }}
                   </button>
                 </div>
               </div>
             </div>
-            <div v-else class="text-gray-600 dark:text-slate-400 text-sm italic">
-              No preferred stations selected
-            </div>
-          </div>
-
-          <div class="border-t border-blue-200 dark:border-slate-700 pt-4">
-            <p class="text-gray-600 dark:text-slate-300 text-xs sm:text-sm mb-3">Add stations to priority list:</p>
-            <div class="flex flex-wrap gap-2">
-              <button
-                v-for="station in radioStore.stations"
-                :key="station.id"
-                @click="radioStore.togglePreferredStation(station.id)"
-                :class="[
-                  'px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap',
-                  radioStore.isPreferredStation(station.id)
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-100 hover:bg-gray-300 dark:hover:bg-slate-600'
-                ]"
-              >
-                {{ station.shortName }}
-              </button>
-            </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Dislike Management -->
-    <div class="px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
-      <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 border border-blue-200 dark:border-slate-700 shadow-lg">
-        <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 mb-3 md:mb-4 flex items-center space-x-2">
-          <HandThumbDownIcon class="w-5 h-5" />
-          <span>Dislike Management</span>
-        </h3>
+        <div>
+          <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 border border-blue-200 dark:border-slate-700 shadow-lg h-full">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 mb-3 md:mb-4 flex items-center space-x-2">
+              <HandThumbDownIcon class="w-5 h-5" />
+              <span>Dislike Management</span>
+            </h3>
 
-        <div class="space-y-3 md:space-y-4">
-          <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
-            <input
-              v-model="dislikeInput"
-              @keyup.enter="addDislike"
-              type="text"
-              placeholder="Enter artist name to skip..."
-              class="flex-1 bg-white dark:bg-slate-900 border border-blue-200 dark:border-slate-700 rounded-lg px-3 sm:px-4 py-2 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors text-sm md:text-base"
-            />
-            <button
-              @click="addDislike"
-              class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 dark:from-red-600 dark:to-red-700 text-white font-medium px-4 py-2 rounded-lg transition-all whitespace-nowrap text-sm"
-            >
-              Add
-            </button>
-          </div>
-
-          <div v-if="radioStore.dislikes.length > 0" class="space-y-2">
-            <div class="text-gray-700 dark:text-slate-200 text-xs sm:text-sm font-medium">Disliked Artists ({{ radioStore.dislikes.length }}):</div>
-            <div class="flex flex-wrap gap-2">
-              <div
-                v-for="(dislike, index) in radioStore.dislikes"
-                :key="index"
-                class="bg-gray-200 dark:bg-slate-700 rounded-lg px-3 py-2 text-gray-800 dark:text-slate-100 text-xs sm:text-sm flex items-center justify-between space-x-2 group hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
-              >
-                <span class="truncate">{{ dislike }}</span>
+            <div class="space-y-3 md:space-y-4">
+              <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
+                <input
+                  v-model="dislikeInput"
+                  @keyup.enter="addDislike"
+                  type="text"
+                  placeholder="Enter artist name to skip..."
+                  class="flex-1 bg-white dark:bg-slate-900 border border-blue-200 dark:border-slate-700 rounded-lg px-3 sm:px-4 py-2 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors text-sm md:text-base"
+                />
                 <button
-                  @click="removeDislike(index)"
-                  class="text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100 transition-colors flex-shrink-0"
+                  @click="addDislike"
+                  class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 dark:from-red-600 dark:to-red-700 text-white font-medium px-4 py-2 rounded-lg transition-all whitespace-nowrap text-sm"
                 >
-                  <XMarkIcon class="w-4 h-4" />
+                  Add
                 </button>
               </div>
+
+              <div v-if="radioStore.dislikes.length > 0" class="space-y-2">
+                <div class="text-gray-700 dark:text-slate-200 text-xs sm:text-sm font-medium">Disliked Artists ({{ radioStore.dislikes.length }}):</div>
+                <div class="flex flex-wrap gap-2">
+                  <div
+                    v-for="(dislike, index) in radioStore.dislikes"
+                    :key="index"
+                    class="bg-gray-200 dark:bg-slate-700 rounded-lg px-3 py-2 text-gray-800 dark:text-slate-100 text-xs sm:text-sm flex items-center justify-between space-x-2 group hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
+                  >
+                    <span class="truncate">{{ dislike }}</span>
+                    <button
+                      @click="removeDislike(index)"
+                      class="text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100 transition-colors flex-shrink-0"
+                    >
+                      <XMarkIcon class="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="text-gray-600 dark:text-slate-400 text-sm italic">
+                No disliked artists yet
+              </div>
             </div>
-          </div>
-          <div v-else class="text-gray-600 dark:text-slate-400 text-sm italic">
-            No disliked artists yet
           </div>
         </div>
       </div>
     </div>
   </div>
+  <!-- Toasts -->
+  <div class="fixed bottom-4 right-4 flex flex-col items-end space-y-2 z-50">
+    <TransitionGroup name="toast" tag="div">
+      <div v-for="(toast, idx) in toasts" :key="toast.id" class="max-w-xs w-full" :style="{ transitionDelay: `${idx * 60}ms` }">
+        <div :class="[
+          'px-3 py-2 rounded-lg shadow-md text-sm transform-gpu',
+          toast.type === 'error' ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' :
+          toast.type === 'warn' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
+          toast.type === 'success' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+          'bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100'
+        ]">
+          {{ toast.message }}
+        </div>
+      </div>
+    </TransitionGroup>
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
 import { useRadioStore } from '../stores/radioStore'
 import StationCard from '../components/StationCard.vue'
 import {
@@ -249,7 +305,8 @@ import {
   SparklesIcon,
   SignalIcon,
   HandThumbDownIcon,
-  XMarkIcon
+  XMarkIcon,
+  SpeakerWaveIcon
 } from '@heroicons/vue/24/outline'
 
 const radioStore = useRadioStore()
@@ -260,8 +317,19 @@ let castInitTimer = null
 let castContext = null
 let remotePlayer = null
 let remotePlayerController = null
+let originalCheckInterval = null
 const isCastAvailable = ref(false)
 const isCasting = ref(false)
+const volume = ref(1)
+
+const currentSongInfo = computed(() => {
+  const station = radioStore.stations.find(s => s.id === radioStore.currentStation?.id)
+  return station?.songInfo || {}
+})
+
+const albumArt = computed(() => {
+  return currentSongInfo.value?.albumArt
+})
 
 const attemptPlay = async () => {
   if (!audioPlayer.value) return
@@ -274,6 +342,34 @@ const attemptPlay = async () => {
   }
 }
 
+// Toasts
+const toasts = ref([])
+const pushToast = (message, type = 'info') => {
+  const id = Date.now() + Math.random()
+  toasts.value.push({ id, message, type })
+  setTimeout(() => {
+    const idx = toasts.value.findIndex(t => t.id === id)
+    if (idx > -1) toasts.value.splice(idx, 1)
+  }, 4000)
+}
+
+// Watch telemetry for notable events and show toasts
+watch(() => radioStore.telemetry.slice(0, 5), (newVal, oldVal) => {
+  if (!oldVal || newVal.length === 0) return
+  const latest = newVal[0]
+  if (!latest) return
+  if (['skip','return','cast_session','cast_error','skip_disabled'].includes(latest.type)) {
+    const msgMap = {
+      skip: 'Skipping to preferred station',
+      return: 'Returning to original station',
+      cast_session: 'Cast session changed',
+      cast_error: 'Cast error',
+      skip_disabled: 'Skipping disabled'
+    }
+    pushToast(msgMap[latest.type] || latest.message)
+  }
+}, { deep: true })
+
 const loadCastStream = async (autoplay = true) => {
   if (!castContext || typeof window === 'undefined') return
   const session = castContext.getCurrentSession()
@@ -281,8 +377,8 @@ const loadCastStream = async (autoplay = true) => {
 
   const mediaInfo = new window.chrome.cast.media.MediaInfo(radioStore.currentStream, 'audio/mpeg')
   const metadata = new window.chrome.cast.media.MusicTrackMediaMetadata()
-  metadata.title = radioStore.currentSongData.title || radioStore.currentStationName || 'Belgian Radio'
-  metadata.artist = radioStore.currentSongData.artist || radioStore.currentStationName || 'VRT'
+  metadata.title = currentSongInfo.value.title || radioStore.currentStationName || 'Belgian Radio'
+  metadata.artist = currentSongInfo.value.artist || radioStore.currentStationName || 'VRT'
   metadata.albumName = radioStore.currentStationName || 'Belgian Radio'
   mediaInfo.metadata = metadata
 
@@ -294,6 +390,7 @@ const loadCastStream = async (autoplay = true) => {
     radioStore.isPlaying = autoplay
   } catch (error) {
     console.error('Error casting media:', error)
+    radioStore.logTelemetry('cast_error', String(error?.message || error))
   }
 }
 
@@ -329,6 +426,7 @@ const startCasting = async () => {
     await castContext.requestSession()
   } catch (error) {
     console.error('Cast session request failed:', error)
+    radioStore.logTelemetry('cast_session_error', String(error?.message || error))
   }
 }
 
@@ -351,12 +449,14 @@ const toggleCastPlayback = async () => {
       radioStore.isPlaying = false
     }, (error) => {
       console.error('Error pausing cast:', error)
+      radioStore.logTelemetry('cast_pause_error', String(error?.message || error))
     })
   } else {
     mediaSession.play(null, () => {
       radioStore.isPlaying = true
     }, (error) => {
       console.error('Error playing cast:', error)
+      radioStore.logTelemetry('cast_play_error', String(error?.message || error))
     })
   }
 }
@@ -389,6 +489,7 @@ const initializeCast = () => {
           audioPlayer.value.pause()
         }
         loadCastStream(radioStore.isPlaying)
+        radioStore.logTelemetry('cast_session', 'started')
       } else if (
         event.sessionState === SessionState.SESSION_ENDED ||
         event.sessionState === SessionState.SESSION_START_FAILED
@@ -396,6 +497,7 @@ const initializeCast = () => {
         isCasting.value = false
         remotePlayer = null
         remotePlayerController = null
+        radioStore.logTelemetry('cast_session', 'ended')
       }
     }
   )
@@ -406,6 +508,7 @@ const initializeCast = () => {
 onMounted(async () => {
   radioStore.loadDislikes()
   radioStore.loadPreferences()
+  radioStore.loadTelemetry()
   
   // Fetch current song first (don't wait for all stations)
   radioStore.fetchCurrentSong()
@@ -415,17 +518,32 @@ onMounted(async () => {
 
   // Auto-play
   await nextTick()
-  await reloadStream(true)
+  if (radioStore.autoPlay) {
+    await reloadStream(true)
+  }
 
   // Refresh current song info every 15 seconds
   refreshInterval = setInterval(() => {
     radioStore.fetchCurrentSong()
-  }, 15000)
+  }, 10000)
   
-  // Refresh all stations info every 30 seconds
+  // Adaptive full-stations refresh: every 10s while skipping, otherwise every 30s
+  let lastFullFetch = Date.now()
   setInterval(() => {
-    radioStore.fetchAllStations()
-  }, 30000)
+    const now = Date.now()
+    const shouldFetch = radioStore.isSkipping || (now - lastFullFetch) > 30000
+    if (shouldFetch) {
+      radioStore.fetchAllStations()
+      lastFullFetch = now
+    }
+  }, 10000)
+
+  // Monitor original station more frequently while skipping (only check when skipping)
+  originalCheckInterval = setInterval(() => {
+    if (radioStore.isSkipping) {
+      radioStore.checkOriginalStation()
+    }
+  }, 5000)
 
   if (!initializeCast()) {
     window.__onGCastApiAvailable = (isAvailable) => {
@@ -457,6 +575,9 @@ onUnmounted(() => {
   if (castInitTimer) {
     clearInterval(castInitTimer)
   }
+    if (originalCheckInterval) {
+      clearInterval(originalCheckInterval)
+    }
   if (audioPlayer.value) {
     audioPlayer.value.pause()
   }
@@ -488,6 +609,12 @@ const togglePlayback = async () => {
   }
 }
 
+const updateVolume = () => {
+  if (audioPlayer.value) {
+    audioPlayer.value.volume = volume.value
+  }
+}
+
 const skipStation = () => {
   radioStore.skipStation()
 }
@@ -514,5 +641,31 @@ const removeDislike = (index) => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-fade-leave-active {
+  transition: all 0.3s cubic-bezier(1, 0.5, 0.8, 1);
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateX(10px);
+  opacity: 0;
+}
+
+.toast-enter-from, .toast-leave-to {
+  transform: translateX(12px) scale(.98);
+  opacity: 0;
+}
+.toast-enter-to, .toast-leave-from {
+  transform: translateX(0) scale(1);
+  opacity: 1;
+}
+.toast-enter-active, .toast-leave-active {
+  transition: transform 280ms cubic-bezier(.2,.8,.2,1), opacity 280ms cubic-bezier(.2,.8,.2,1);
 }
 </style>
