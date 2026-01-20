@@ -380,6 +380,9 @@ const loadCastStream = async (autoplay = true) => {
   metadata.title = currentSongInfo.value.title || radioStore.currentStationName || 'Belgian Radio'
   metadata.artist = currentSongInfo.value.artist || radioStore.currentStationName || 'VRT'
   metadata.albumName = radioStore.currentStationName || 'Belgian Radio'
+  if (currentSongInfo.value.albumArt) {
+    metadata.images = [new window.chrome.cast.Image(currentSongInfo.value.albumArt)]
+  }
   mediaInfo.metadata = metadata
 
   const request = new window.chrome.cast.media.LoadRequest(mediaInfo)
@@ -565,6 +568,14 @@ watch(
   async () => {
     await nextTick()
     await reloadStream()
+  }
+)
+
+watch(
+  () => [currentSongInfo.value.artist, currentSongInfo.value.title, currentSongInfo.value.albumArt],
+  async () => {
+    if (!isCasting.value) return
+    await loadCastStream(radioStore.isPlaying)
   }
 )
 
