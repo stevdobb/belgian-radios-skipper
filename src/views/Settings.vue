@@ -45,7 +45,7 @@
         <div class="flex items-center justify-between pt-4 border-t border-blue-200 dark:border-slate-700">
           <div>
             <label class="text-gray-900 dark:text-slate-100 font-medium">Auto-return after skip</label>
-            <p class="text-gray-600 dark:text-slate-300 text-sm mt-1">Automatically return to the original station when the disliked song ends</p>
+            <p class="text-gray-600 dark:text-slate-300 text-sm mt-1">Automatically return to the first preferred station when the disliked song ends</p>
           </div>
           <div class="relative inline-block w-14 h-8 bg-gray-300 dark:bg-slate-700 rounded-full cursor-pointer" @click="toggleAutoReturn">
             <div

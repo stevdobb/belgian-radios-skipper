@@ -177,14 +177,14 @@ export const useRadioStore = defineStore('radio', {
       })
       await Promise.all(promises)
 
-      // If we previously skipped from an original station, check whether that original station
-      // is now playing a non-disliked song; if so, return to it.
+      // If we previously skipped, check whether the return station is now playing
+      // a non-disliked song; if so, return to it.
       if (this.autoReturn && this.originalStationIndex !== undefined && this.originalStationIndex !== null && this.currentStationIndex !== this.originalStationIndex) {
         const original = this.stations[this.originalStationIndex]
         const artist = original?.songInfo?.artist
         const title = original?.songInfo?.title
         if (!this.isDiskliked(artist, title)) {
-          this.returnToOriginalStation()
+          this.returnToOriginalStation(this.originalStationIndex)
         }
       }
     },
@@ -205,7 +205,7 @@ export const useRadioStore = defineStore('radio', {
         const rawTitle = songData?.title || songData?.program?.title || songData?.broadcast?.title
 
         if (!this.isDiskliked(rawArtist, rawTitle)) {
-          if (this.autoReturn) this.returnToOriginalStation()
+          if (this.autoReturn) this.returnToOriginalStation(this.originalStationIndex)
         }
       } catch (error) {
         console.error(`Error checking original station ${original.name}:`, error)
@@ -255,9 +255,11 @@ export const useRadioStore = defineStore('radio', {
       const nextStationId = this.preferredStations[nextIndex]
       const nextStationIndex = this.stations.findIndex(s => s.id === nextStationId)
 
-      // Remember original station index if we're starting a skip sequence
-      if (this.originalStationIndex === undefined || this.originalStationIndex === null) {
-        this.originalStationIndex = this.currentStationIndex
+      // Remember return station (top preferred) if we're starting a skip sequence
+      if (!this.isSkipping) {
+        const preferredId = this.preferredStations[0]
+        const preferredIndex = this.stations.findIndex(s => s.id === preferredId)
+        this.originalStationIndex = preferredIndex > -1 ? preferredIndex : this.currentStationIndex
         this.skipAttemptCount = 0
       }
       this.isSkipping = true
@@ -268,7 +270,7 @@ export const useRadioStore = defineStore('radio', {
       if (this.skipAttemptCount > limit) {
         this.logTelemetry('skip_limit_reached', `reached limit ${limit}, returning to original`)
         this.skipAttemptCount = 0
-        this.returnToOriginalStation()
+        this.returnToOriginalStation(this.originalStationIndex)
         return
       }
       this.logTelemetry('skip', `attempt ${this.skipAttemptCount} skipping to stationId:${nextStationId}`)
@@ -287,9 +289,12 @@ export const useRadioStore = defineStore('radio', {
       this.fetchCurrentSong()
     },
 
-    returnToOriginalStation() {
-      if (this.originalStationIndex !== undefined && this.originalStationIndex !== null) {
-        this.currentStationIndex = this.originalStationIndex
+    returnToOriginalStation(targetIndex) {
+      const returnIndex = targetIndex !== undefined && targetIndex !== null
+        ? targetIndex
+        : this.originalStationIndex
+      if (returnIndex !== undefined && returnIndex !== null) {
+        this.currentStationIndex = returnIndex
       }
       this.originalStationIndex = null
       this.isSkipping = false
