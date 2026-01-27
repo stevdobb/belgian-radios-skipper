@@ -53,7 +53,7 @@ export const useRadioStore = defineStore('radio', {
     skipAttemptCount: 0,
     maxPreferredSkips: null,
     autoPlay: false,
-    dislikes: ['Metejoor', 'Freek', 'Toerist Le MC', 'Bazart', 'Milow', 'Maksim', 'Niels Destadsbader', 'Clouseau', 'Natalia', 'Laura Tesoro','Regi'],
+    dislikes: ['Metejoor', 'Freek', 'Toerist Le MC', 'Bazart', 'Milow', 'Maksim', 'Niels Destadsbader', 'Clouseau', 'Natalia', 'Laura Tesoro','Regi', 'Gustaph', 'Willy Sommers', 'Camille', 'Bart Peeters', 'Milk Inc.', 'Zwangere Guy'],
     preferredStations: [],
     autoReturn: true,
     telemetry: [],
