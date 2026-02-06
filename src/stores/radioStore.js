@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia'
 import axios from 'axios'
 
+const SKIP_HISTORY_KEY = 'skipHistory'
+const SKIP_HISTORY_LIMIT = 20
+
 export const useRadioStore = defineStore('radio', {
   state: () => ({
     stations: [
@@ -57,6 +60,7 @@ export const useRadioStore = defineStore('radio', {
     preferredStations: [],
     autoReturn: true,
     telemetry: [],
+    skipHistory: [],
     songChangedTimeout: null,
     streamNonce: 0
   }),
@@ -128,9 +132,9 @@ export const useRadioStore = defineStore('radio', {
             if (!this.skipEnabled) {
               this.logTelemetry('skip_disabled', `Detected disliked ${rawArtist} - ${rawTitle} but skipping is disabled`)
             } else if (this.preferredStations.length > 0) {
-              this.skipToNextPreferred()
+              this.skipToNextPreferred('auto')
             } else {
-              this.skipStation()
+              this.skipStation('auto')
             }
           }
         } else {
@@ -235,7 +239,51 @@ export const useRadioStore = defineStore('radio', {
       }
     },
 
-    skipStation() {
+    recordSkip(source = 'manual') {
+      try {
+        const station = this.currentStation
+        const songInfo = station?.songInfo || {}
+        const entry = {
+          id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+          time: new Date().toISOString(),
+          stationId: station?.id ?? null,
+          stationName: station?.name || '',
+          stationShortName: station?.shortName || '',
+          artist: songInfo.artist || '',
+          title: songInfo.title || '',
+          source
+        }
+        this.skipHistory.unshift(entry)
+        if (this.skipHistory.length > SKIP_HISTORY_LIMIT) {
+          this.skipHistory.splice(SKIP_HISTORY_LIMIT)
+        }
+        localStorage.setItem(SKIP_HISTORY_KEY, JSON.stringify(this.skipHistory))
+      } catch (e) {
+        // ignore skip history errors
+      }
+    },
+
+    loadSkipHistory() {
+      const saved = localStorage.getItem(SKIP_HISTORY_KEY)
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          this.skipHistory = Array.isArray(parsed)
+            ? parsed.slice(0, SKIP_HISTORY_LIMIT)
+            : []
+        } catch (e) {
+          this.skipHistory = []
+        }
+      }
+    },
+
+    clearSkipHistory() {
+      this.skipHistory = []
+      localStorage.removeItem(SKIP_HISTORY_KEY)
+    },
+
+    skipStation(source = 'manual') {
+      this.recordSkip(source)
       this.currentStationIndex = (this.currentStationIndex + 1) % this.stations.length
       if (this.currentStation) {
         this.currentStation.songInfo = { artist: null, title: null, albumArt: null }
@@ -244,11 +292,12 @@ export const useRadioStore = defineStore('radio', {
       this.fetchCurrentSong()
     },
 
-    skipToNextPreferred() {
+    skipToNextPreferred(source = 'auto') {
       if (this.preferredStations.length === 0) {
-        this.skipStation()
+        this.skipStation(source)
         return
       }
+      this.recordSkip(source)
       const currentStationId = this.currentStation?.id
       const currentIndex = this.preferredStations.indexOf(currentStationId)
       let nextIndex = (currentIndex + 1) % this.preferredStations.length

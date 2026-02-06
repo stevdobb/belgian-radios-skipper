@@ -40,6 +40,15 @@
             <span>Home</span>
           </RouterLink>
           <RouterLink
+            to="/skips"
+            @click="sidebarOpen = false"
+            class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors text-gray-700 dark:text-slate-300"
+            :class="{ 'bg-blue-500 text-white': $route.path === '/skips' }"
+          >
+            <ClockIcon class="w-5 h-5" />
+            <span>Skips</span>
+          </RouterLink>
+          <RouterLink
             to="/settings"
             @click="sidebarOpen = false"
             class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors text-gray-700 dark:text-slate-300"
@@ -91,7 +100,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { HomeIcon, CogIcon } from '@heroicons/vue/24/outline'
+import { HomeIcon, CogIcon, ClockIcon } from '@heroicons/vue/24/outline'
 import CastVolume from './CastVolume.vue'
 
 const sidebarOpen = ref(false)

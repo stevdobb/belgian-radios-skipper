@@ -370,12 +370,8 @@ watch(() => radioStore.telemetry.slice(0, 5), (newVal, oldVal) => {
   }
 }, { deep: true })
 
-const loadCastStream = async (autoplay = true) => {
-  if (!castContext || typeof window === 'undefined') return
-  const session = castContext.getCurrentSession()
-  if (!session || !window.chrome?.cast?.media) return
-
-  const mediaInfo = new window.chrome.cast.media.MediaInfo(radioStore.currentStream, 'audio/mpeg')
+const buildCastMetadata = () => {
+  if (!window.chrome?.cast?.media) return null
   const metadata = new window.chrome.cast.media.MusicTrackMediaMetadata()
   metadata.title = currentSongInfo.value.title || radioStore.currentStationName || 'Belgian Radio'
   metadata.artist = currentSongInfo.value.artist || radioStore.currentStationName || 'VRT'
@@ -383,7 +379,30 @@ const loadCastStream = async (autoplay = true) => {
   if (currentSongInfo.value.albumArt) {
     metadata.images = [new window.chrome.cast.Image(currentSongInfo.value.albumArt)]
   }
-  mediaInfo.metadata = metadata
+  return metadata
+}
+
+const updateCastMetadata = () => {
+  if (!castContext || typeof window === 'undefined') return
+  const session = castContext.getCurrentSession()
+  const mediaSession = session?.getMediaSession()
+  if (!mediaSession || !mediaSession.media) return
+  const metadata = buildCastMetadata()
+  if (!metadata) return
+  // Avoid reloading the media on metadata changes to prevent audio interruptions.
+  mediaSession.media.metadata = metadata
+}
+
+const loadCastStream = async (autoplay = true) => {
+  if (!castContext || typeof window === 'undefined') return
+  const session = castContext.getCurrentSession()
+  if (!session || !window.chrome?.cast?.media) return
+
+  const mediaInfo = new window.chrome.cast.media.MediaInfo(radioStore.currentStream, 'audio/mpeg')
+  const metadata = buildCastMetadata()
+  if (metadata) {
+    mediaInfo.metadata = metadata
+  }
 
   const request = new window.chrome.cast.media.LoadRequest(mediaInfo)
   request.autoplay = autoplay
@@ -512,6 +531,7 @@ onMounted(async () => {
   radioStore.loadDislikes()
   radioStore.loadPreferences()
   radioStore.loadTelemetry()
+  radioStore.loadSkipHistory()
   
   // Fetch current song first (don't wait for all stations)
   radioStore.fetchCurrentSong()
@@ -575,7 +595,13 @@ watch(
   () => [currentSongInfo.value.artist, currentSongInfo.value.title, currentSongInfo.value.albumArt],
   async () => {
     if (!isCasting.value) return
-    await loadCastStream(radioStore.isPlaying)
+    const session = castContext?.getCurrentSession()
+    const mediaSession = session?.getMediaSession()
+    if (!mediaSession) {
+      await loadCastStream(radioStore.isPlaying)
+      return
+    }
+    updateCastMetadata()
   }
 )
 
