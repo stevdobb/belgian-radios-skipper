@@ -3,6 +3,24 @@ import axios from 'axios'
 
 const SKIP_HISTORY_KEY = 'skipHistory'
 const SKIP_HISTORY_LIMIT = 20
+const AUTO_SKIP_DELAY_MS = 15000
+const AUTO_RETURN_DELAY_MS = 15000
+
+const normalize = (value) => (value || '').toLowerCase().trim()
+const buildSongKey = (stationId, artist, title) => `${stationId ?? 'x'}|${normalize(artist)}|${normalize(title)}`
+
+const buildSongInfo = (songData) => {
+  if (!songData) return { artist: null, title: null, albumArt: null }
+  const artist = songData.artist || songData.author
+  const title = songData.title || songData.program?.title || songData.broadcast?.title
+  const imageLinks = songData.imageLinks || songData.program?.imageLinks || songData.broadcast?.imageLinks || []
+  const albumArt =
+    imageLinks.find(img => img.type === 'VRTMAX_RADIO_COVER')?.url ||
+    imageLinks.find(img => img.type === 'SQUARE')?.url ||
+    imageLinks.find(img => img.type === 'FULL_HD')?.url ||
+    imageLinks[0]?.url
+  return { artist, title, albumArt }
+}
 
 export const useRadioStore = defineStore('radio', {
   state: () => ({
@@ -62,7 +80,11 @@ export const useRadioStore = defineStore('radio', {
     telemetry: [],
     skipHistory: [],
     songChangedTimeout: null,
-    streamNonce: 0
+    streamNonce: 0,
+    pendingAutoSkipKey: null,
+    pendingAutoSkipTimer: null,
+    pendingAutoReturnKey: null,
+    pendingAutoReturnTimer: null
   }),
 
   getters: {
@@ -88,8 +110,97 @@ export const useRadioStore = defineStore('radio', {
   },
 
   actions: {
+    clearPendingAutoSkip() {
+      if (this.pendingAutoSkipTimer) {
+        clearTimeout(this.pendingAutoSkipTimer)
+      }
+      this.pendingAutoSkipTimer = null
+      this.pendingAutoSkipKey = null
+    },
+
+    scheduleAutoSkip(artist, title) {
+      if (!this.skipEnabled) {
+        this.clearPendingAutoSkip()
+        return
+      }
+      const stationId = this.currentStation?.id
+      const key = buildSongKey(stationId, artist, title)
+      if (this.pendingAutoSkipKey === key) return
+      this.clearPendingAutoSkip()
+      this.pendingAutoSkipKey = key
+      this.pendingAutoSkipTimer = setTimeout(() => {
+        const station = this.currentStation
+        if (!station || station.id !== stationId) {
+          this.clearPendingAutoSkip()
+          return
+        }
+        const currentArtist = station.songInfo?.artist
+        const currentTitle = station.songInfo?.title
+        if (!this.isDiskliked(currentArtist, currentTitle)) {
+          this.clearPendingAutoSkip()
+          return
+        }
+        if (!this.skipEnabled) {
+          this.logTelemetry('skip_disabled', `Detected disliked ${currentArtist} - ${currentTitle} but skipping is disabled`)
+          this.clearPendingAutoSkip()
+          return
+        }
+        if (this.preferredStations.length > 0) {
+          this.skipToNextPreferred('auto')
+        } else {
+          this.skipStation('auto')
+        }
+        this.clearPendingAutoSkip()
+      }, AUTO_SKIP_DELAY_MS)
+    },
+
+    clearPendingAutoReturn() {
+      if (this.pendingAutoReturnTimer) {
+        clearTimeout(this.pendingAutoReturnTimer)
+      }
+      this.pendingAutoReturnTimer = null
+      this.pendingAutoReturnKey = null
+    },
+
+    scheduleAutoReturn(originalIndex) {
+      if (!this.autoReturn) {
+        this.clearPendingAutoReturn()
+        return
+      }
+      if (originalIndex === undefined || originalIndex === null) return
+      const key = `${originalIndex}|returnable`
+      if (this.pendingAutoReturnKey === key) return
+      this.clearPendingAutoReturn()
+      this.pendingAutoReturnKey = key
+      this.pendingAutoReturnTimer = setTimeout(() => {
+        if (!this.autoReturn) {
+          this.clearPendingAutoReturn()
+          return
+        }
+        if (this.originalStationIndex === undefined || this.originalStationIndex === null) {
+          this.clearPendingAutoReturn()
+          return
+        }
+        if (this.currentStationIndex === this.originalStationIndex) {
+          this.clearPendingAutoReturn()
+          return
+        }
+        const original = this.stations[this.originalStationIndex]
+        const artist = original?.songInfo?.artist
+        const title = original?.songInfo?.title
+        if (this.isDiskliked(artist, title)) {
+          this.clearPendingAutoReturn()
+          return
+        }
+        this.returnToOriginalStation(this.originalStationIndex)
+        this.clearPendingAutoReturn()
+      }, AUTO_RETURN_DELAY_MS)
+    },
+
     selectStation(index) {
       // user-selected station becomes the baseline original station
+      this.clearPendingAutoSkip()
+      this.clearPendingAutoReturn()
       this.originalStationIndex = index
       this.isSkipping = false
       this.skipAttemptCount = 0
@@ -112,33 +223,21 @@ export const useRadioStore = defineStore('radio', {
         const songData = scheduleItem?.nowOnAirItem
 
         if (songData) {
-          const rawArtist = songData.artist || songData.author
-          const rawTitle = songData.title || songData.program?.title || songData.broadcast?.title
-          
-          const imageLinks = songData.imageLinks || songData.program?.imageLinks || songData.broadcast?.imageLinks || []
-          const albumArt = 
-            imageLinks.find(img => img.type === 'VRTMAX_RADIO_COVER')?.url ||
-            imageLinks.find(img => img.type === 'SQUARE')?.url ||
-            imageLinks.find(img => img.type === 'FULL_HD')?.url ||
-            imageLinks[0]?.url
-
-          station.songInfo = {
-            artist: rawArtist,
-            title: rawTitle,
-            albumArt: albumArt
-          }
-
-          if (this.isDiskliked(rawArtist, rawTitle)) {
+          const info = buildSongInfo(songData)
+          station.songInfo = info
+          if (this.isDiskliked(info.artist, info.title)) {
             if (!this.skipEnabled) {
-              this.logTelemetry('skip_disabled', `Detected disliked ${rawArtist} - ${rawTitle} but skipping is disabled`)
-            } else if (this.preferredStations.length > 0) {
-              this.skipToNextPreferred('auto')
+              this.clearPendingAutoSkip()
+              this.logTelemetry('skip_disabled', `Detected disliked ${info.artist} - ${info.title} but skipping is disabled`)
             } else {
-              this.skipStation('auto')
+              this.scheduleAutoSkip(info.artist, info.title)
             }
+          } else {
+            this.clearPendingAutoSkip()
           }
         } else {
           station.songInfo = { artist: null, title: null, albumArt: null }
+          this.clearPendingAutoSkip()
         }
       } catch (error) {
         console.error(`Error fetching song for ${this.currentStation.name}:`, error)
@@ -156,21 +255,7 @@ export const useRadioStore = defineStore('radio', {
           const songData = scheduleItem?.nowOnAirItem
 
           if (songData) {
-            const rawArtist = songData.artist || songData.author
-            const rawTitle = songData.title || songData.program?.title || songData.broadcast?.title
-
-            const imageLinks = songData.imageLinks || songData.program?.imageLinks || songData.broadcast?.imageLinks || []
-            const albumArt = 
-              imageLinks.find(img => img.type === 'VRTMAX_RADIO_COVER')?.url ||
-              imageLinks.find(img => img.type === 'SQUARE')?.url ||
-              imageLinks.find(img => img.type === 'FULL_HD')?.url ||
-              imageLinks[0]?.url
-
-            station.songInfo = {
-              artist: rawArtist,
-              title: rawTitle,
-              albumArt: albumArt
-            }
+            station.songInfo = buildSongInfo(songData)
           } else {
             station.songInfo = { artist: null, title: null, albumArt: null }
           }
@@ -188,8 +273,12 @@ export const useRadioStore = defineStore('radio', {
         const artist = original?.songInfo?.artist
         const title = original?.songInfo?.title
         if (!this.isDiskliked(artist, title)) {
-          this.returnToOriginalStation(this.originalStationIndex)
+          this.scheduleAutoReturn(this.originalStationIndex)
+        } else {
+          this.clearPendingAutoReturn()
         }
+      } else {
+        this.clearPendingAutoReturn()
       }
     },
 
@@ -205,11 +294,14 @@ export const useRadioStore = defineStore('radio', {
         const scheduleItem = response.data.schedule?.find(item => item.nowOnAirItem)
         const songData = scheduleItem?.nowOnAirItem
 
-        const rawArtist = songData?.artist || songData?.author
-        const rawTitle = songData?.title || songData?.program?.title || songData?.broadcast?.title
-
-        if (!this.isDiskliked(rawArtist, rawTitle)) {
-          if (this.autoReturn) this.returnToOriginalStation(this.originalStationIndex)
+        const info = buildSongInfo(songData)
+        if (original) {
+          original.songInfo = info
+        }
+        if (!this.isDiskliked(info.artist, info.title)) {
+          if (this.autoReturn) this.scheduleAutoReturn(this.originalStationIndex)
+        } else {
+          this.clearPendingAutoReturn()
         }
       } catch (error) {
         console.error(`Error checking original station ${original.name}:`, error)
@@ -283,6 +375,7 @@ export const useRadioStore = defineStore('radio', {
     },
 
     skipStation(source = 'manual') {
+      this.clearPendingAutoSkip()
       this.recordSkip(source)
       this.currentStationIndex = (this.currentStationIndex + 1) % this.stations.length
       if (this.currentStation) {
@@ -297,6 +390,7 @@ export const useRadioStore = defineStore('radio', {
         this.skipStation(source)
         return
       }
+      this.clearPendingAutoSkip()
       this.recordSkip(source)
       const currentStationId = this.currentStation?.id
       const currentIndex = this.preferredStations.indexOf(currentStationId)
@@ -306,6 +400,7 @@ export const useRadioStore = defineStore('radio', {
 
       // Remember return station (top preferred) if we're starting a skip sequence
       if (!this.isSkipping) {
+        this.clearPendingAutoReturn()
         const preferredId = this.preferredStations[0]
         const preferredIndex = this.stations.findIndex(s => s.id === preferredId)
         this.originalStationIndex = preferredIndex > -1 ? preferredIndex : this.currentStationIndex
@@ -339,6 +434,7 @@ export const useRadioStore = defineStore('radio', {
     },
 
     returnToOriginalStation(targetIndex) {
+      this.clearPendingAutoReturn()
       const returnIndex = targetIndex !== undefined && targetIndex !== null
         ? targetIndex
         : this.originalStationIndex
