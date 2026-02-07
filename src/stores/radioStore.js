@@ -1,10 +1,14 @@
 import { defineStore } from 'pinia'
 import axios from 'axios'
+import { io } from 'socket.io-client'
 
 const SKIP_HISTORY_KEY = 'skipHistory'
 const SKIP_HISTORY_LIMIT = 20
 const AUTO_SKIP_DELAY_MS = 15000
 const AUTO_RETURN_DELAY_MS = 15000
+const QMUSIC_STATION_ID = 7
+const QMUSIC_SOCKET_URL = 'wss://socket.qmusic.be/api/272/h2fymtaw/websocket'
+const QMUSIC_IMAGE_BASE = 'https://static.qmusic.be'
 
 const normalize = (value) => (value || '').toLowerCase().trim()
 const buildSongKey = (stationId, artist, title) => `${stationId ?? 'x'}|${normalize(artist)}|${normalize(title)}`
@@ -19,6 +23,17 @@ const buildSongInfo = (songData) => {
     imageLinks.find(img => img.type === 'SQUARE')?.url ||
     imageLinks.find(img => img.type === 'FULL_HD')?.url ||
     imageLinks[0]?.url
+  return { artist, title, albumArt }
+}
+
+const buildQmusicSongInfo = (payload) => {
+  if (!payload) return { artist: null, title: null, albumArt: null }
+  const artist = payload.artist?.name || null
+  const title = payload.title || null
+  const imagePath = payload.images?.default || payload.thumbnail || null
+  const albumArt = imagePath
+    ? (imagePath.startsWith('http') ? imagePath : `${QMUSIC_IMAGE_BASE}${imagePath}`)
+    : null
   return { artist, title, albumArt }
 }
 
@@ -64,6 +79,46 @@ export const useRadioStore = defineStore('radio', {
         color: 'from-orange-500 to-orange-700',
         icon: 'flame',
         songInfo: { artist: null, title: null, albumArt: null }
+      },
+      {
+        id: 4,
+        name: 'Studio Brussel Tijdloze',
+        shortName: 'Tijdloze',
+        stream: 'https://radio.vrtcdn.be/vrt/detijdloze/live.m3u8?ola=true&contentType=LIVESTREAM&filter=%28%21%28type%3D%3D%22audio%22%26%26FourCC%21%3D%22AACL%22%29%29',
+        endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-stubrutijdloze',
+        color: 'from-amber-500 to-amber-700',
+        icon: 'clock',
+        songInfo: { artist: null, title: null, albumArt: null }
+      },
+      {
+        id: 5,
+        name: 'Radio 1',
+        shortName: 'Radio 1',
+        stream: 'https://radio.vrtcdn.be/vrt/radio1/live.m3u8?ola=true&contentType=LIVESTREAM&filter=%28%21%28type%3D%3D%22audio%22%26%26FourCC%21%3D%22AACL%22%29%29',
+        endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-radio1',
+        color: 'from-emerald-500 to-emerald-700',
+        icon: 'broadcast',
+        songInfo: { artist: null, title: null, albumArt: null }
+      },
+      {
+        id: 6,
+        name: 'Radio 2 Vlaams-Brabant',
+        shortName: 'Radio 2 VLB',
+        stream: 'https://radio.vrtcdn.be/vrt/radio2-vlaams-brabant/live.m3u8?ola=true&contentType=LIVESTREAM&filter=%28%21%28type%3D%3D%22audio%22%26%26FourCC%21%3D%22AACL%22%29%29',
+        endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-radio2vlb',
+        color: 'from-lime-500 to-lime-700',
+        icon: 'map',
+        songInfo: { artist: null, title: null, albumArt: null }
+      },
+      {
+        id: 7,
+        name: 'Qmusic',
+        shortName: 'Qmusic',
+        stream: 'https://icecast-qmusicbe-cdp.triple-it.nl/qmusic.aac?aw_0_1st.skey=1770450358&aw_0_1st.playerid=site-player&aw_0_req.userConsentV2=CQX1pUAQX1pUAGbABBNLB8FoAPPAAAAAAAIgLDERxCpEAAFAICJyQJkgUIgWMAAABEAQAAIBAyABgAgAIAQCkGESBADABAACCAIAKABBAABJGAAAAAAAAAAAAACASAAAAAoAICAAgCIBQAAIAAAAAAAAAAAAAAACAAAAkAAAAAIoSEgAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAABAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAYIAAgFICAAgCUgFICQFgAFgAVAAuABwAEAAMgAaABMAD8AIYAZQA7wB-gEcAJEASYAxQBogEegLzAZIAyccAGAAuAQgAlIBSAExALZHQGwAFgAVAA4ACAAGQANAAmABiAD8AIYAZQA0QB3gD9AItARwBHQCRAEmAMUAicBHoCZAF5gMkAZOAywCOxQAGABcAlICYikBkABYAFQAOAAgABkADQAJgAYgA_ACGAGUANEAd4A_QCLQEcAR0AkQBigETgI9AXmAyQBk4DLAI7BgAIBSCQAIAC4CYiUA0ABYAHAAmABiAEMAO8AjgBigEegLzAZIAycBlhABIAAsADIATQAvgBiADYAHcAPwAoABSADSAGqAOIAd4BHACUgFZAK-AWkAu4BhADFAGcgNMA04CBAEDgInAR6AmIBO4C9gGOgMfAZOAywCApCAUAAsAMQAfgB3gEcAJSAYoBE4CPQGTg.YAAAAAAAAAAA&aw_0_1st.puid=89354f7a4d593cec856bd56d841343140a2c1121',
+        endpoint: null,
+        color: 'from-pink-500 to-pink-700',
+        icon: 'music',
+        songInfo: { artist: null, title: null, albumArt: null }
       }
     ],
     currentStationIndex: 0,
@@ -84,7 +139,8 @@ export const useRadioStore = defineStore('radio', {
     pendingAutoSkipKey: null,
     pendingAutoSkipTimer: null,
     pendingAutoReturnKey: null,
-    pendingAutoReturnTimer: null
+    pendingAutoReturnTimer: null,
+    qmusicSocket: null
   }),
 
   getters: {
@@ -213,8 +269,56 @@ export const useRadioStore = defineStore('radio', {
       this.fetchCurrentSong()
     },
 
+    ensureQmusicSocket() {
+      if (this.qmusicSocket) return
+      const socket = io(QMUSIC_SOCKET_URL, {
+        transports: ['websocket'],
+        upgrade: false,
+        reconnection: true
+      })
+      socket.on('message', (raw) => {
+        try {
+          const outer = typeof raw === 'string' ? JSON.parse(raw) : raw
+          if (!outer || outer.action !== 'data' || !outer.data) return
+          const inner = JSON.parse(outer.data)
+          if (inner?.station !== 'qbe_maximum_hits' || inner?.entity !== 'plays' || inner?.action !== 'play') return
+          const info = buildQmusicSongInfo(inner.data)
+          const station = this.stations.find(s => s.id === QMUSIC_STATION_ID)
+          if (station) {
+            station.songInfo = info
+          }
+          if (this.currentStation?.id === QMUSIC_STATION_ID) {
+            if (this.isDiskliked(info.artist, info.title)) {
+              if (!this.skipEnabled) {
+                this.clearPendingAutoSkip()
+                this.logTelemetry('skip_disabled', `Detected disliked ${info.artist} - ${info.title} but skipping is disabled`)
+              } else {
+                this.scheduleAutoSkip(info.artist, info.title)
+              }
+            } else {
+              this.clearPendingAutoSkip()
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing Qmusic socket payload:', error)
+        }
+      })
+      socket.on('connect_error', (error) => {
+        console.error('Qmusic socket error:', error)
+      })
+      this.qmusicSocket = socket
+    },
+
     async fetchCurrentSong() {
       if (!this.currentStation) return
+      if (!this.currentStation.endpoint) {
+        if (this.currentStation.id === QMUSIC_STATION_ID) {
+          this.ensureQmusicSocket()
+        }
+        this.currentStation.songInfo = { artist: null, title: null, albumArt: null }
+        this.clearPendingAutoSkip()
+        return
+      }
 
       try {
         const station = this.currentStation
@@ -249,6 +353,13 @@ export const useRadioStore = defineStore('radio', {
 
     async fetchAllStations() {
       const promises = this.stations.map(async (station) => {
+        if (!station.endpoint) {
+          if (station.id === QMUSIC_STATION_ID) {
+            this.ensureQmusicSocket()
+          }
+          station.songInfo = { artist: null, title: null, albumArt: null }
+          return
+        }
         try {
           const response = await axios.get(station.endpoint)
           const scheduleItem = response.data.schedule?.find(item => item.nowOnAirItem)
