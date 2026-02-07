@@ -1,7 +1,7 @@
 <template>
   <div
     @click="selectStation"
-    class="relative overflow-hidden rounded-xl bg-gradient-to-br cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl shadow-lg border border-gray-300 dark:border-slate-700"
+    class="relative overflow-hidden rounded-lg bg-gradient-to-br cursor-pointer transform transition-all duration-300 hover:scale-[1.02] hover:shadow-xl shadow-md border border-gray-300 dark:border-slate-700"
     :class="`${station.color} bg-opacity-20`"
   >
     <!-- Background Pattern -->
@@ -10,44 +10,44 @@
     </div>
 
     <!-- Content -->
-    <div class="relative p-4 sm:p-6 h-full flex flex-col justify-between min-h-56 sm:min-h-64">
+    <div class="relative p-3 sm:p-4 h-full flex flex-col justify-between min-h-44 sm:min-h-48">
       <!-- Header -->
       <div>
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100">{{ station.name }}</h3>
-          <div class="w-9 h-9 sm:w-10 sm:h-10 bg-gray-200 dark:bg-slate-800 rounded-lg flex items-center justify-center">
-            <MusicalNoteIcon class="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 dark:text-slate-200" />
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100">{{ station.name }}</h3>
+          <div class="w-8 h-8 sm:w-9 sm:h-9 bg-gray-200 dark:bg-slate-800 rounded-md flex items-center justify-center">
+            <MusicalNoteIcon class="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-slate-200" />
           </div>
         </div>
       </div>
 
       <!-- Now Playing -->
-      <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-3">
         <div v-if="songInfo.albumArt" class="flex-shrink-0">
-          <img :src="songInfo.albumArt" alt="Album Art" class="w-16 h-16 rounded-lg shadow-md object-cover" />
+          <img :src="songInfo.albumArt" alt="Album Art" class="w-12 h-12 rounded-md shadow-sm object-cover" />
         </div>
         <div class="flex-1 min-w-0">
           <div v-if="songInfo.artist || songInfo.title" class="space-y-1">
-            <div class="text-gray-700 dark:text-slate-300 text-xs font-semibold uppercase tracking-wider">
+            <div class="text-gray-700 dark:text-slate-300 text-[10px] font-semibold uppercase tracking-wider">
               Now Playing
             </div>
-            <div v-if="songInfo.artist" class="text-gray-900 dark:text-slate-100 font-bold text-base line-clamp-2">
+            <div v-if="songInfo.artist" class="text-gray-900 dark:text-slate-100 font-semibold text-sm line-clamp-2">
               {{ songInfo.artist }}
             </div>
-            <div v-if="songInfo.title" class="text-gray-700 dark:text-slate-300 text-xs line-clamp-2">
+            <div v-if="songInfo.title" class="text-gray-700 dark:text-slate-300 text-[11px] line-clamp-2">
               {{ songInfo.title }}
             </div>
           </div>
-          <div v-else class="text-gray-600 dark:text-slate-400 text-xs italic">
+          <div v-else class="text-gray-600 dark:text-slate-400 text-[11px] italic">
             No song playing now
           </div>
         </div>
       </div>
 
       <!-- Footer -->
-      <div class="flex items-center justify-between mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-400 dark:border-slate-700 border-opacity-30">
-        <span class="text-gray-700 dark:text-slate-300 text-xs font-medium">{{ station.shortName }}</span>
-        <ArrowRightIcon class="w-5 h-5 text-gray-700 dark:text-slate-300 opacity-70 group-hover:opacity-100 transition-opacity" />
+      <div class="flex items-center justify-between mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-400 dark:border-slate-700 border-opacity-30">
+        <span class="text-gray-700 dark:text-slate-300 text-[11px] font-medium">{{ station.shortName }}</span>
+        <ArrowRightIcon class="w-4 h-4 text-gray-700 dark:text-slate-300 opacity-70 group-hover:opacity-100 transition-opacity" />
       </div>
     </div>
   </div>

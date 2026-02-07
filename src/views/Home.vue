@@ -151,7 +151,7 @@
     <div class="px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
       <div class="mb-4 md:mb-6">
         <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 mb-3 md:mb-4">All Stations</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-3 md:gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
           <StationCard
             v-for="station in radioStore.stations"
             :key="station.id"

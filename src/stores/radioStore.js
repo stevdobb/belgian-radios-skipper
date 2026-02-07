@@ -104,6 +104,26 @@ export const useRadioStore = defineStore('radio', {
         color: 'from-pink-500 to-pink-700',
         icon: 'music',
         songInfo: { artist: null, title: null, albumArt: null }
+      },
+      {
+        id: 8,
+        name: 'Studio Brussel Untz',
+        shortName: 'Untz',
+        stream: 'https://radio.vrtcdn.be/vrt/stubru-untz/live.m3u8?ola=true&contentType=LIVESTREAM&filter=%28%21%28type%3D%3D%22audio%22%26%26FourCC%21%3D%22AACL%22%29%29',
+        endpoint: 'https://media-services-public.vrt.be/media-aggregator/v2/media-items/livestream-audio-stubruuntz?client=vrtnu-web%40PROD&vrtPlayerToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NzA0NTMwMDAsImdlb0xvY2F0aW9uIjoiQkVMR0lVTSIsImF1dGhlbnRpY2F0ZWQiOmZhbHNlLCJ1c2VyU3RhdHVzIjoiVU5LTk9XTiIsImFnZUNhdGVnb3J5IjoiWkVST19QTFVTIiwicHJldmlld0FsbG93ZWQiOmZhbHNlLCJsZWdhY3lQcmV3IjpmYWxzZSwibWF4UXVhbGl0eSI6IkhEIiwiZHJtSW1wbGVtZW50YXRpb24iOiJXaWRldmluZSIsInRydXN0ZWRPcyI6dHJ1ZSwiZHJtQ2FwYWJpbGl0eSI6IlNXIn0.EWX-cRI6OfLdDN78WniS5IrbLfG6vlnVZ4LBYyg5wv4',
+        color: 'from-cyan-500 to-cyan-700',
+        icon: 'bolt',
+        songInfo: { artist: null, title: null, albumArt: null }
+      },
+      {
+        id: 9,
+        name: 'MNM Hits',
+        shortName: 'MNM Hits',
+        stream: 'https://radio.vrtcdn.be/vrt/mnm-hits/live.m3u8?ola=true&contentType=LIVESTREAM&filter=%28%21%28type%3D%3D%22audio%22%26%26FourCC%21%3D%22AACL%22%29%29',
+        endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-mnmhits',
+        color: 'from-fuchsia-500 to-fuchsia-700',
+        icon: 'sparkles',
+        songInfo: { artist: null, title: null, albumArt: null }
       }
     ],
     currentStationIndex: 0,
