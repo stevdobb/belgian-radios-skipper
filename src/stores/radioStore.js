@@ -1,14 +1,10 @@
 import { defineStore } from 'pinia'
 import axios from 'axios'
-import { io } from 'socket.io-client'
 
 const SKIP_HISTORY_KEY = 'skipHistory'
 const SKIP_HISTORY_LIMIT = 20
 const AUTO_SKIP_DELAY_MS = 15000
 const AUTO_RETURN_DELAY_MS = 15000
-const QMUSIC_STATION_ID = 7
-const QMUSIC_SOCKET_URL = 'wss://socket.qmusic.be/api/272/h2fymtaw/websocket'
-const QMUSIC_IMAGE_BASE = 'https://static.qmusic.be'
 
 const normalize = (value) => (value || '').toLowerCase().trim()
 const buildSongKey = (stationId, artist, title) => `${stationId ?? 'x'}|${normalize(artist)}|${normalize(title)}`
@@ -23,17 +19,6 @@ const buildSongInfo = (songData) => {
     imageLinks.find(img => img.type === 'SQUARE')?.url ||
     imageLinks.find(img => img.type === 'FULL_HD')?.url ||
     imageLinks[0]?.url
-  return { artist, title, albumArt }
-}
-
-const buildQmusicSongInfo = (payload) => {
-  if (!payload) return { artist: null, title: null, albumArt: null }
-  const artist = payload.artist?.name || null
-  const title = payload.title || null
-  const imagePath = payload.images?.default || payload.thumbnail || null
-  const albumArt = imagePath
-    ? (imagePath.startsWith('http') ? imagePath : `${QMUSIC_IMAGE_BASE}${imagePath}`)
-    : null
   return { artist, title, albumArt }
 }
 
@@ -139,8 +124,7 @@ export const useRadioStore = defineStore('radio', {
     pendingAutoSkipKey: null,
     pendingAutoSkipTimer: null,
     pendingAutoReturnKey: null,
-    pendingAutoReturnTimer: null,
-    qmusicSocket: null
+    pendingAutoReturnTimer: null
   }),
 
   getters: {
@@ -269,52 +253,9 @@ export const useRadioStore = defineStore('radio', {
       this.fetchCurrentSong()
     },
 
-    ensureQmusicSocket() {
-      if (this.qmusicSocket) return
-      const socket = io(QMUSIC_SOCKET_URL, {
-        transports: ['websocket'],
-        upgrade: false,
-        reconnection: true
-      })
-      socket.on('message', (raw) => {
-        try {
-          const outer = typeof raw === 'string' ? JSON.parse(raw) : raw
-          if (!outer || outer.action !== 'data' || !outer.data) return
-          const inner = JSON.parse(outer.data)
-          if (inner?.station !== 'qbe_maximum_hits' || inner?.entity !== 'plays' || inner?.action !== 'play') return
-          const info = buildQmusicSongInfo(inner.data)
-          const station = this.stations.find(s => s.id === QMUSIC_STATION_ID)
-          if (station) {
-            station.songInfo = info
-          }
-          if (this.currentStation?.id === QMUSIC_STATION_ID) {
-            if (this.isDiskliked(info.artist, info.title)) {
-              if (!this.skipEnabled) {
-                this.clearPendingAutoSkip()
-                this.logTelemetry('skip_disabled', `Detected disliked ${info.artist} - ${info.title} but skipping is disabled`)
-              } else {
-                this.scheduleAutoSkip(info.artist, info.title)
-              }
-            } else {
-              this.clearPendingAutoSkip()
-            }
-          }
-        } catch (error) {
-          console.error('Error parsing Qmusic socket payload:', error)
-        }
-      })
-      socket.on('connect_error', (error) => {
-        console.error('Qmusic socket error:', error)
-      })
-      this.qmusicSocket = socket
-    },
-
     async fetchCurrentSong() {
       if (!this.currentStation) return
       if (!this.currentStation.endpoint) {
-        if (this.currentStation.id === QMUSIC_STATION_ID) {
-          this.ensureQmusicSocket()
-        }
         this.currentStation.songInfo = { artist: null, title: null, albumArt: null }
         this.clearPendingAutoSkip()
         return
@@ -354,9 +295,6 @@ export const useRadioStore = defineStore('radio', {
     async fetchAllStations() {
       const promises = this.stations.map(async (station) => {
         if (!station.endpoint) {
-          if (station.id === QMUSIC_STATION_ID) {
-            this.ensureQmusicSocket()
-          }
           station.songInfo = { artist: null, title: null, albumArt: null }
           return
         }
