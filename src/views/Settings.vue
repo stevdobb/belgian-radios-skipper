@@ -9,22 +9,8 @@
       </h3>
 
       <div class="space-y-4">
-        <!-- Theme Toggle -->
-        <div class="flex items-center justify-between">
-          <div>
-            <label class="text-gray-900 dark:text-slate-100 font-medium">Dark Mode</label>
-            <p class="text-gray-600 dark:text-slate-300 text-sm mt-1">Follows your browser setting by default</p>
-          </div>
-          <div class="relative inline-block w-14 h-8 bg-[#3d74bb] rounded-full cursor-pointer" @click="toggleDarkMode">
-            <div
-              class="absolute top-1 left-1 w-6 h-6 bg-white dark:bg-slate-100 rounded-full shadow-md transition-all duration-300 transform"
-              :style="{ transform: darkMode ? 'translateX(24px)' : 'translateX(0)' }"
-            ></div>
-          </div>
-        </div>
-
         <!-- Auto-play Toggle -->
-        <div class="flex items-center justify-between pt-4 border-t border-blue-200 dark:border-slate-700">
+        <div class="flex items-center justify-between border-t border-blue-200 dark:border-slate-700 pt-4">
           <div>
             <label class="text-gray-900 dark:text-slate-100 font-medium">Auto-play</label>
             <p class="text-gray-600 dark:text-slate-300 text-sm mt-1">Automatically start playing when opening app</p>
@@ -194,9 +180,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import { useRadioStore } from '../stores/radioStore'
-import { useThemeStore } from '../stores/themeStore'
 import {
   CogIcon,
   TrashIcon,
@@ -205,12 +189,6 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const radioStore = useRadioStore()
-const themeStore = useThemeStore()
-const darkMode = computed(() => themeStore.isDark)
-
-const toggleDarkMode = () => {
-  themeStore.toggleDarkMode()
-}
 
 const toggleAutoplay = () => {
   radioStore.autoPlay = !radioStore.autoPlay

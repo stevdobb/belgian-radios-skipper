@@ -2,7 +2,7 @@
 <template>
   <div class="dw-theme min-h-screen bg-[#0f4ea3] text-blue-50">
     <header class="fixed top-0 left-0 right-0 z-50 border-b border-[#4f86cb] bg-[#1455a9]/95 backdrop-blur-sm shadow-md">
-      <div class="h-16 mx-auto w-full max-w-[1480px] px-3 sm:px-4 md:px-6 flex items-center justify-between gap-3">
+      <div class="h-16 w-full px-3 sm:px-4 md:px-6 flex items-center justify-between gap-3">
         <div class="flex items-center gap-2">
           <svg class="w-6 h-6 text-blue-100" fill="currentColor" viewBox="0 0 20 20">
             <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zm0 8a1 1 0 011-1h12a1 1 0 011 1v1a1 1 0 01-1 1H4a1 1 0 01-1-1v-1z"></path>
