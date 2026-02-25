@@ -547,7 +547,7 @@ onMounted(async () => {
   radioStore.loadSkipHistory()
   
   // Fetch current song first (don't wait for all stations)
-  radioStore.fetchCurrentSong()
+  radioStore.fetchCurrentSong({ immediateSkip: true })
   
   // Fetch all stations in background (non-blocking)
   radioStore.fetchAllStations()

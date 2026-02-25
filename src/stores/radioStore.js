@@ -3,10 +3,10 @@ import axios from 'axios'
 
 const SKIP_HISTORY_KEY = 'skipHistory'
 const SKIP_HISTORY_LIMIT = 20
-const AUTO_SKIP_DELAY_MS = 15000
+const AUTO_SKIP_DELAY_MS = 3000
 const AUTO_RETURN_DELAY_MS = 15000
 
-const normalize = (value) => (value || '').toLowerCase().trim()
+const normalize = (value) => String(value ?? '').toLowerCase().trim()
 const buildSongKey = (stationId, artist, title) => `${stationId ?? 'x'}|${normalize(artist)}|${normalize(title)}`
 
 const buildSongInfo = (songData) => {
@@ -187,7 +187,6 @@ export const useRadioStore = defineStore('radio', {
     },
     currentSongInfo: (state) => state.stations[state.currentStationIndex]?.songInfo,
     isDiskliked: (state) => (artist, title) => {
-      const normalize = (value) => (value || '').toLowerCase()
       const artistValue = normalize(artist)
       const titleValue = normalize(title)
       return state.dislikes.some((dislike) => {
@@ -300,10 +299,11 @@ export const useRadioStore = defineStore('radio', {
         this.currentStation.songInfo = { artist: null, title: null, albumArt: null }
       }
       this.streamNonce += 1
-      this.fetchCurrentSong()
+      this.fetchCurrentSong({ immediateSkip: true })
     },
 
-    async fetchCurrentSong() {
+    async fetchCurrentSong(options = {}) {
+      const { immediateSkip = false } = options
       if (!this.currentStation) return
       if (!this.currentStation.endpoint) {
         this.currentStation.songInfo = { artist: null, title: null, albumArt: null }
@@ -313,7 +313,11 @@ export const useRadioStore = defineStore('radio', {
 
       try {
         const station = this.currentStation
+        const stationId = station.id
         const response = await axios.get(station.endpoint)
+        if (!this.currentStation || this.currentStation.id !== stationId) {
+          return
+        }
         const scheduleItem = response.data.schedule?.find(item => item.nowOnAirItem)
         const songData = scheduleItem?.nowOnAirItem
 
@@ -324,6 +328,13 @@ export const useRadioStore = defineStore('radio', {
             if (!this.skipEnabled) {
               this.clearPendingAutoSkip()
               this.logTelemetry('skip_disabled', `Detected disliked ${info.artist} - ${info.title} but skipping is disabled`)
+            } else if (immediateSkip) {
+              this.clearPendingAutoSkip()
+              if (this.preferredStations.length > 0) {
+                this.skipToNextPreferred('auto')
+              } else {
+                this.skipStation('auto')
+              }
             } else {
               this.scheduleAutoSkip(info.artist, info.title)
             }
@@ -408,8 +419,11 @@ export const useRadioStore = defineStore('radio', {
     },
 
     addDislike(artist) {
-      if (artist && !this.dislikes.includes(artist)) {
-        this.dislikes.push(artist)
+      const cleanedArtist = String(artist ?? '').trim()
+      if (!cleanedArtist) return
+      const exists = this.dislikes.some((entry) => normalize(entry) === normalize(cleanedArtist))
+      if (!exists) {
+        this.dislikes.push(cleanedArtist)
         this.saveDislikes()
       }
     },
@@ -426,7 +440,12 @@ export const useRadioStore = defineStore('radio', {
     loadDislikes() {
       const savedDislikes = localStorage.getItem('dislikes')
       if (savedDislikes) {
-        this.dislikes = JSON.parse(savedDislikes)
+        const parsed = JSON.parse(savedDislikes)
+        if (Array.isArray(parsed)) {
+          this.dislikes = parsed
+            .map((entry) => String(entry ?? '').trim())
+            .filter(Boolean)
+        }
       }
     },
 
@@ -477,6 +496,7 @@ export const useRadioStore = defineStore('radio', {
       this.clearPendingAutoSkip()
       this.recordSkip(source)
       this.currentStationIndex = (this.currentStationIndex + 1) % this.stations.length
+      this.isPlaying = true
       if (this.currentStation) {
         this.currentStation.songInfo = { artist: null, title: null, albumArt: null }
       }
@@ -533,6 +553,7 @@ export const useRadioStore = defineStore('radio', {
         // fallback to next station by index if id lookup fails
         this.currentStationIndex = (this.currentStationIndex + 1) % this.stations.length
       }
+      this.isPlaying = true
 
       if (this.currentStation) {
         this.currentStation.songInfo = { artist: null, title: null, albumArt: null }
