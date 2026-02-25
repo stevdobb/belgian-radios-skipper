@@ -1,8 +1,7 @@
 <template>
   <div
     @click="selectStation"
-    class="relative overflow-hidden rounded-lg bg-gradient-to-br cursor-pointer transform transition-all duration-300 hover:scale-[1.02] hover:shadow-xl shadow-md border border-gray-300 dark:border-slate-700"
-    :class="`${station.color} bg-opacity-20`"
+    class="group relative overflow-hidden rounded-2xl dw-card cursor-pointer transform transition-all duration-300 hover:-translate-y-0.5 hover:shadow-2xl"
   >
     <!-- Background Pattern -->
     <div class="absolute inset-0 opacity-5">
@@ -15,8 +14,12 @@
       <div>
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100">{{ station.name }}</h3>
-          <div class="w-8 h-8 sm:w-9 sm:h-9 bg-gray-200 dark:bg-slate-800 rounded-md flex items-center justify-center">
-            <MusicalNoteIcon class="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-slate-200" />
+          <div
+            class="h-8 sm:h-9 min-w-[52px] sm:min-w-[64px] max-w-[94px] px-2 rounded-md flex items-center justify-center text-[10px] sm:text-xs font-extrabold tracking-wide uppercase border border-white/20 shadow-sm truncate"
+            :style="brandBadgeStyle"
+            :title="station.brandLabel || station.shortName || station.name"
+          >
+            {{ brandBadgeLabel }}
           </div>
         </div>
       </div>
@@ -45,8 +48,10 @@
       </div>
 
       <!-- Footer -->
-      <div class="flex items-center justify-between mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-400 dark:border-slate-700 border-opacity-30">
-        <span class="text-gray-700 dark:text-slate-300 text-[11px] font-medium">{{ station.shortName }}</span>
+      <div class="flex items-center justify-between mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-[#4f86cb]">
+        <span class="text-gray-700 dark:text-slate-300 text-[11px] font-medium" :style="station.brandColor ? { color: station.brandColor } : null">
+          {{ station.shortName }}
+        </span>
         <ArrowRightIcon class="w-4 h-4 text-gray-700 dark:text-slate-300 opacity-70 group-hover:opacity-100 transition-opacity" />
       </div>
     </div>
@@ -57,7 +62,7 @@
 /* eslint-disable vue/no-setup-props-destructure, no-undef */
 import { computed } from 'vue'
 import { useRadioStore } from '../stores/radioStore'
-import { MusicalNoteIcon, ArrowRightIcon } from '@heroicons/vue/24/outline'
+import { ArrowRightIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
   station: {
@@ -71,6 +76,17 @@ const radioStore = useRadioStore()
 
 const songInfo = computed(() => {
   return props.station.songInfo || {}
+})
+
+const brandBadgeLabel = computed(() => {
+  return props.station.brandLabel || props.station.shortName || props.station.name || 'Radio'
+})
+
+const brandBadgeStyle = computed(() => {
+  return {
+    backgroundColor: props.station.brandColor || '#3b82f6',
+    color: props.station.brandTextColor || '#ffffff'
+  }
 })
 
 const selectStation = () => {

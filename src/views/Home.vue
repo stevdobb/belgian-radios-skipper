@@ -3,7 +3,7 @@
   <div class="space-y-4 md:space-y-6 pb-4 md:pb-6">
     <!-- Now Playing Section -->
     <div v-if="radioStore.currentStation" class="px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6">
-      <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-8 border border-blue-200 dark:border-slate-700 shadow-lg">
+      <div class="dw-card rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-8">
         <div class="flex items-center justify-between gap-3 mb-3 md:mb-4">
           <div class="text-blue-600 dark:text-blue-300 text-xs md:text-sm font-semibold uppercase tracking-wider">
             Now Playing
@@ -93,7 +93,7 @@
               <div class="flex items-center space-x-3">
                 <button
                   @click="skipStation"
-                  class="p-2 md:p-2 hover:bg-blue-200 dark:hover:bg-slate-700 rounded-lg transition-colors text-gray-700 dark:text-slate-200 hover:text-gray-900 dark:hover:text-slate-100"
+                  class="p-2 md:p-2 hover:bg-[#2d6fbc] rounded-lg transition-colors text-gray-700 dark:text-slate-200 hover:text-gray-900 dark:hover:text-slate-100"
                   title="Previous station"
                 >
                   <BackwardIcon class="w-5 h-5" />
@@ -111,7 +111,7 @@
 
                 <button
                   @click="nextStation"
-                  class="p-2 md:p-2 hover:bg-blue-200 dark:hover:bg-slate-700 rounded-lg transition-colors text-gray-700 dark:text-slate-200 hover:text-gray-900 dark:hover:text-slate-100"
+                  class="p-2 md:p-2 hover:bg-[#2d6fbc] rounded-lg transition-colors text-gray-700 dark:text-slate-200 hover:text-gray-900 dark:hover:text-slate-100"
                   title="Next station"
                 >
                   <ForwardIcon class="w-5 h-5" />
@@ -127,7 +127,7 @@
                   step="0.01"
                   v-model="volume"
                   @input="updateVolume"
-                  class="w-36 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600 hover:accent-blue-500"
+                  class="w-36 h-1.5 bg-[#3f75ba] rounded-lg appearance-none cursor-pointer accent-blue-200 hover:accent-blue-100"
                 />
                 <div class="text-gray-600 dark:text-slate-300 text-sm font-medium">
                   {{ radioStore.isPlaying ? 'Playing' : 'Paused' }}
@@ -165,7 +165,7 @@
     <div class="px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>
-          <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 border border-blue-200 dark:border-slate-700 shadow-lg h-full">
+          <div class="dw-card rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 h-full">
             <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 mb-3 md:mb-4 flex items-center space-x-2">
               <HandThumbDownIcon class="w-5 h-5" />
               <span>Preferred Stations</span>
@@ -181,7 +181,7 @@
                     <div
                       v-for="(stationId, index) in radioStore.preferredStations"
                       :key="stationId"
-                      class="bg-white dark:bg-slate-900 border border-blue-200 dark:border-slate-700 rounded-lg p-2.5 sm:p-3 flex items-center justify-between"
+                      class="bg-[#1a4f98] border border-blue-200 rounded-lg p-2.5 sm:p-3 flex items-center justify-between"
                     >
                       <div class="flex items-center space-x-3 flex-1 min-w-0">
                         <span class="bg-blue-500 text-white w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-semibold flex-shrink-0">{{ index + 1 }}</span>
@@ -212,7 +212,7 @@
                       'px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap',
                       radioStore.isPreferredStation(station.id)
                         ? 'bg-blue-500 text-white'
-                        : 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-100 hover:bg-gray-300 dark:hover:bg-slate-600'
+                        : 'bg-[#2b67b4] text-blue-100 hover:bg-[#3a76c2]'
                     ]"
                   >
                     {{ station.shortName }}
@@ -224,7 +224,7 @@
         </div>
 
         <div>
-          <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 border border-blue-200 dark:border-slate-700 shadow-lg h-full">
+          <div class="dw-card rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 h-full">
             <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 mb-3 md:mb-4 flex items-center space-x-2">
               <HandThumbDownIcon class="w-5 h-5" />
               <span>Dislike Management</span>
@@ -237,7 +237,7 @@
                   @keyup.enter="addDislike"
                   type="text"
                   placeholder="Enter artist name to skip..."
-                  class="flex-1 bg-white dark:bg-slate-900 border border-blue-200 dark:border-slate-700 rounded-lg px-3 sm:px-4 py-2 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors text-sm md:text-base"
+                  class="flex-1 bg-[#1a4f98] border border-blue-200 rounded-lg px-3 sm:px-4 py-2 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-blue-300 focus:ring-1 focus:ring-blue-300 transition-colors text-sm md:text-base"
                 />
                 <button
                   @click="addDislike"
@@ -253,7 +253,7 @@
                   <div
                     v-for="(dislike, index) in radioStore.dislikes"
                     :key="index"
-                    class="bg-gray-200 dark:bg-slate-700 rounded-lg px-3 py-2 text-gray-800 dark:text-slate-100 text-xs sm:text-sm flex items-center justify-between space-x-2 group hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
+                    class="bg-[#2b67b4] rounded-lg px-3 py-2 text-gray-800 dark:text-slate-100 text-xs sm:text-sm flex items-center justify-between space-x-2 group hover:bg-red-700 transition-colors"
                   >
                     <span class="truncate">{{ dislike }}</span>
                     <button
@@ -283,7 +283,7 @@
           toast.type === 'error' ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' :
           toast.type === 'warn' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
           toast.type === 'success' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
-          'bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100'
+          'bg-[#1a4f98] text-blue-100'
         ]">
           {{ toast.message }}
         </div>
@@ -321,6 +321,7 @@ let originalCheckInterval = null
 const isCastAvailable = ref(false)
 const isCasting = ref(false)
 const volume = ref(1)
+const isReloadingStream = ref(false)
 
 const currentSongInfo = computed(() => {
   const station = radioStore.stations.find(s => s.id === radioStore.currentStation?.id)
@@ -417,14 +418,26 @@ const loadCastStream = async (autoplay = true) => {
 }
 
 const reloadStream = async (forcePlay = false) => {
+  isReloadingStream.value = true
   if (isCasting.value) {
-    await loadCastStream(forcePlay || radioStore.isPlaying)
+    try {
+      await loadCastStream(forcePlay || radioStore.isPlaying)
+      return
+    } finally {
+      isReloadingStream.value = false
+    }
+  }
+  if (!audioPlayer.value) {
+    isReloadingStream.value = false
     return
   }
-  if (!audioPlayer.value) return
-  audioPlayer.value.load()
-  if (forcePlay || radioStore.isPlaying) {
-    await attemptPlay()
+  try {
+    audioPlayer.value.load()
+    if (forcePlay || radioStore.isPlaying) {
+      await attemptPlay()
+    }
+  } finally {
+    isReloadingStream.value = false
   }
 }
 
@@ -627,6 +640,7 @@ const onPlay = () => {
 }
 
 const onPause = () => {
+  if (isReloadingStream.value) return
   if (!isCasting.value) {
     radioStore.isPlaying = false
   }

@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isConnected" class="flex flex-col space-y-2 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 transition-all">
+  <div v-if="isConnected" class="flex flex-col space-y-2 p-3 bg-[#1a4f98] rounded-xl border border-[#4f86cb] transition-all">
     <div class="flex items-center justify-between text-xs font-medium text-gray-500 dark:text-slate-400">
       <span>Cast Volume</span>
       <span>{{ Math.round(volumeLevel * 100) }}%</span>
@@ -7,7 +7,7 @@
     <div class="flex items-center space-x-2">
       <button 
         @click="toggleMute" 
-        class="p-1 text-gray-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 focus:outline-none"
+        class="p-1 text-blue-100 hover:text-white transition-colors rounded-md hover:bg-[#2d6fbc] focus:outline-none"
         :title="isMuted ? 'Unmute' : 'Mute'"
       >
         <SpeakerXMarkIcon v-if="isMuted" class="w-5 h-5" />
@@ -21,7 +21,7 @@
         step="0.01"
         :value="volumeLevel"
         @input="handleVolumeChange"
-        class="flex-1 h-1.5 bg-gray-200 dark:bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-600 hover:accent-blue-500"
+        class="flex-1 h-1.5 bg-[#3f75ba] rounded-lg appearance-none cursor-pointer accent-blue-200 hover:accent-blue-100"
       />
     </div>
   </div>

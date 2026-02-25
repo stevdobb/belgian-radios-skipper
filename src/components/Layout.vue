@@ -1,107 +1,116 @@
 <!-- eslint-disable vue/multi-word-component-names -->
 <template>
-  <div class="flex h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
-    <!-- Mobile Menu Button -->
-    <button
-      @click="sidebarOpen = !sidebarOpen"
-      class="md:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 shadow-md"
-    >
-      <svg class="w-6 h-6 text-gray-900 dark:text-slate-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-      </svg>
-    </button>
-
-    <!-- Sidebar Navigation -->
-    <nav
-      :class="[
-        'bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 shadow-md flex flex-col transition-all duration-300 overflow-hidden',
-        sidebarOpen ? 'w-64 pointer-events-auto' : 'w-0 pointer-events-none md:w-64 md:pointer-events-auto',
-        'fixed md:relative h-full z-40'
-      ]"
-    >
-      <div class="p-6 border-b border-gray-200 dark:border-slate-700">
-        <div class="flex items-center space-x-2">
-          <svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+  <div class="dw-theme min-h-screen bg-[#0f4ea3] text-blue-50">
+    <header class="fixed top-0 left-0 right-0 z-50 border-b border-[#4f86cb] bg-[#1455a9]/95 backdrop-blur-sm shadow-md">
+      <div class="h-16 mx-auto w-full max-w-[1480px] px-3 sm:px-4 md:px-6 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <svg class="w-6 h-6 text-blue-100" fill="currentColor" viewBox="0 0 20 20">
             <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zm0 8a1 1 0 011-1h12a1 1 0 011 1v1a1 1 0 01-1 1H4a1 1 0 01-1-1v-1z"></path>
           </svg>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-slate-100">Radio</h1>
+          <span class="font-semibold tracking-tight text-blue-50">Belgian Radio</span>
         </div>
-      </div>
 
-      <div class="flex-1 flex flex-col justify-between p-6">
-        <div class="space-y-2">
+        <nav class="hidden md:flex items-center gap-1 sm:gap-2">
           <RouterLink
             to="/"
-            @click="sidebarOpen = false"
-            class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors text-gray-700 dark:text-slate-300"
-            :class="{ 'bg-blue-500 text-white': $route.path === '/' }"
+            class="inline-flex items-center gap-2 h-9 rounded-md border border-transparent px-3 text-sm font-medium text-blue-100 transition-colors hover:bg-[#2f70bf] hover:text-white"
+            :class="{ 'bg-[#3f7fcc] text-white border-[#6b9bda] shadow-sm': $route.path === '/' }"
           >
-            <HomeIcon class="w-5 h-5" />
+            <HomeIcon class="w-4 h-4" />
             <span>Home</span>
           </RouterLink>
           <RouterLink
             to="/skips"
-            @click="sidebarOpen = false"
-            class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors text-gray-700 dark:text-slate-300"
-            :class="{ 'bg-blue-500 text-white': $route.path === '/skips' }"
+            class="inline-flex items-center gap-2 h-9 rounded-md border border-transparent px-3 text-sm font-medium text-blue-100 transition-colors hover:bg-[#2f70bf] hover:text-white"
+            :class="{ 'bg-[#3f7fcc] text-white border-[#6b9bda] shadow-sm': $route.path === '/skips' }"
           >
-            <ClockIcon class="w-5 h-5" />
+            <ClockIcon class="w-4 h-4" />
             <span>Skips</span>
           </RouterLink>
           <RouterLink
             to="/settings"
-            @click="sidebarOpen = false"
-            class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors text-gray-700 dark:text-slate-300"
-            :class="{ 'bg-blue-500 text-white': $route.path === '/settings' }"
+            class="inline-flex items-center gap-2 h-9 rounded-md border border-transparent px-3 text-sm font-medium text-blue-100 transition-colors hover:bg-[#2f70bf] hover:text-white"
+            :class="{ 'bg-[#3f7fcc] text-white border-[#6b9bda] shadow-sm': $route.path === '/settings' }"
           >
-            <CogIcon class="w-5 h-5" />
+            <CogIcon class="w-4 h-4" />
             <span>Settings</span>
           </RouterLink>
-        </div>
+        </nav>
 
-        <div class="space-y-4">
-          <CastVolume />
-          <div class="text-gray-500 dark:text-slate-400 text-xs">
-            <p>Belgian Radio Player</p>
-            <p class="mt-2">© 2025</p>
-          </div>
-        </div>
+        <button
+          type="button"
+          class="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-md border border-[#6b9bda] text-blue-100 hover:bg-[#2f70bf] transition-colors"
+          @click="mobileMenuOpen = !mobileMenuOpen"
+          :aria-expanded="mobileMenuOpen ? 'true' : 'false'"
+          aria-label="Open menu"
+        >
+          <Bars3Icon v-if="!mobileMenuOpen" class="w-5 h-5" />
+          <XMarkIcon v-else class="w-5 h-5" />
+        </button>
       </div>
-    </nav>
+    </header>
 
-    <!-- Sidebar Overlay (Mobile) -->
     <div
-      v-if="sidebarOpen"
-      @click="sidebarOpen = false"
-      class="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+      v-if="mobileMenuOpen"
+      class="fixed inset-0 top-16 z-40 bg-black/35 md:hidden"
+      @click="mobileMenuOpen = false"
     ></div>
 
-    <!-- Main Content -->
-    <div class="flex-1 flex flex-col overflow-hidden pt-12 md:pt-0">
-      <!-- Header -->
-      <!-- <header class="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-4 md:px-6 py-4 shadow-sm">
-        <div class="flex items-center justify-between">
-          <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-slate-100 ml-12 md:ml-0">{{ headerTitle }}</h2>
-          <div class="flex items-center space-x-4">
-            <button @click="toggleInfo" class="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100">
-              <InformationCircleIcon class="w-6 h-6" />
-            </button>
-          </div>
-        </div>
-      </header> -->
-
-      <!-- Router View -->
-      <main class="flex-1 overflow-auto">
-        <RouterView />
-      </main>
+    <div
+      v-if="mobileMenuOpen"
+      class="fixed top-16 left-0 right-0 z-50 border-b border-[#4f86cb] bg-[#1455a9] md:hidden shadow-lg"
+    >
+      <nav class="px-3 py-3 space-y-2">
+        <RouterLink
+          to="/"
+          class="inline-flex w-full items-center gap-2 h-10 rounded-md border border-transparent px-3 text-sm font-medium text-blue-100 transition-colors hover:bg-[#2f70bf] hover:text-white"
+          :class="{ 'bg-[#3f7fcc] text-white border-[#6b9bda] shadow-sm': $route.path === '/' }"
+          @click="mobileMenuOpen = false"
+        >
+          <HomeIcon class="w-4 h-4" />
+          <span>Home</span>
+        </RouterLink>
+        <RouterLink
+          to="/skips"
+          class="inline-flex w-full items-center gap-2 h-10 rounded-md border border-transparent px-3 text-sm font-medium text-blue-100 transition-colors hover:bg-[#2f70bf] hover:text-white"
+          :class="{ 'bg-[#3f7fcc] text-white border-[#6b9bda] shadow-sm': $route.path === '/skips' }"
+          @click="mobileMenuOpen = false"
+        >
+          <ClockIcon class="w-4 h-4" />
+          <span>Skips</span>
+        </RouterLink>
+        <RouterLink
+          to="/settings"
+          class="inline-flex w-full items-center gap-2 h-10 rounded-md border border-transparent px-3 text-sm font-medium text-blue-100 transition-colors hover:bg-[#2f70bf] hover:text-white"
+          :class="{ 'bg-[#3f7fcc] text-white border-[#6b9bda] shadow-sm': $route.path === '/settings' }"
+          @click="mobileMenuOpen = false"
+        >
+          <CogIcon class="w-4 h-4" />
+          <span>Settings</span>
+        </RouterLink>
+      </nav>
     </div>
+
+    <div class="hidden md:block fixed top-20 right-4 z-40 w-60">
+      <CastVolume />
+    </div>
+
+    <main class="pt-16 min-h-screen">
+      <RouterView />
+    </main>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { HomeIcon, CogIcon, ClockIcon } from '@heroicons/vue/24/outline'
+import { ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { HomeIcon, CogIcon, ClockIcon, Bars3Icon, XMarkIcon } from '@heroicons/vue/24/outline'
 import CastVolume from './CastVolume.vue'
 
-const sidebarOpen = ref(false)
+const route = useRoute()
+const mobileMenuOpen = ref(false)
+
+watch(() => route.path, () => {
+  mobileMenuOpen.value = false
+})
 </script>

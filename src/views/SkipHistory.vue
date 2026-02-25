@@ -1,7 +1,7 @@
 <!-- eslint-disable vue/multi-word-component-names -->
 <template>
   <div class="space-y-6 p-6">
-    <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl p-6 border border-blue-200 dark:border-slate-700 shadow-lg">
+    <div class="dw-card rounded-2xl p-6">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h3 class="text-xl font-semibold text-gray-900 dark:text-slate-100 flex items-center space-x-2">
           <ClockIcon class="w-6 h-6" />
@@ -33,8 +33,8 @@
             class="py-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3"
           >
             <div class="flex items-start gap-3">
-              <div class="w-9 h-9 rounded-lg bg-blue-100 dark:bg-slate-800 flex items-center justify-center">
-                <MusicalNoteIcon class="w-5 h-5 text-blue-600 dark:text-blue-300" />
+              <div class="w-9 h-9 rounded-lg bg-[#2b67b4] flex items-center justify-center">
+                <MusicalNoteIcon class="w-5 h-5 text-blue-100" />
               </div>
               <div class="min-w-0">
                 <div class="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">

@@ -33,6 +33,9 @@ export const useRadioStore = defineStore('radio', {
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-stubru',
         color: 'from-blue-500 to-blue-700',
         icon: 'music',
+        brandColor: '#facc15',
+        brandTextColor: '#111827',
+        brandLabel: 'STUBRU',
         songInfo: { artist: null, title: null, albumArt: null }
       },
       {
@@ -43,6 +46,9 @@ export const useRadioStore = defineStore('radio', {
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-mnm',
         color: 'from-purple-500 to-purple-700',
         icon: 'microphone',
+        brandColor: '#ef4444',
+        brandTextColor: '#ffffff',
+        brandLabel: 'MNM',
         songInfo: { artist: null, title: null, albumArt: null }
       },
       {
@@ -53,6 +59,9 @@ export const useRadioStore = defineStore('radio', {
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-stubrubruut',
         color: 'from-red-500 to-red-700',
         icon: 'heart',
+        brandColor: '#111111',
+        brandTextColor: '#ffffff',
+        brandLabel: 'BRUUT',
         songInfo: { artist: null, title: null, albumArt: null }
       },
       {
@@ -63,6 +72,9 @@ export const useRadioStore = defineStore('radio', {
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-stubru-vuurland',
         color: 'from-orange-500 to-orange-700',
         icon: 'flame',
+        brandColor: '#f97316',
+        brandTextColor: '#ffffff',
+        brandLabel: 'VUUR',
         songInfo: { artist: null, title: null, albumArt: null }
       },
       {
@@ -73,6 +85,9 @@ export const useRadioStore = defineStore('radio', {
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-stubrutijdloze',
         color: 'from-amber-500 to-amber-700',
         icon: 'clock',
+        brandColor: '#f59e0b',
+        brandTextColor: '#111827',
+        brandLabel: 'TIJD',
         songInfo: { artist: null, title: null, albumArt: null }
       },
       {
@@ -83,6 +98,9 @@ export const useRadioStore = defineStore('radio', {
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-radio1',
         color: 'from-emerald-500 to-emerald-700',
         icon: 'broadcast',
+        brandColor: '#dc2626',
+        brandTextColor: '#ffffff',
+        brandLabel: 'R1',
         songInfo: { artist: null, title: null, albumArt: null }
       },
       {
@@ -93,6 +111,9 @@ export const useRadioStore = defineStore('radio', {
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-radio2vlb',
         color: 'from-lime-500 to-lime-700',
         icon: 'map',
+        brandColor: '#0ea5e9',
+        brandTextColor: '#ffffff',
+        brandLabel: 'R2',
         songInfo: { artist: null, title: null, albumArt: null }
       },
       {
@@ -103,6 +124,9 @@ export const useRadioStore = defineStore('radio', {
         endpoint: null,
         color: 'from-pink-500 to-pink-700',
         icon: 'music',
+        brandColor: '#e11d48',
+        brandTextColor: '#ffffff',
+        brandLabel: 'Q',
         songInfo: { artist: null, title: null, albumArt: null }
       },
       {
@@ -113,6 +137,9 @@ export const useRadioStore = defineStore('radio', {
         endpoint: 'https://media-services-public.vrt.be/media-aggregator/v2/media-items/livestream-audio-stubruuntz?client=vrtnu-web%40PROD&vrtPlayerToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NzA0NTMwMDAsImdlb0xvY2F0aW9uIjoiQkVMR0lVTSIsImF1dGhlbnRpY2F0ZWQiOmZhbHNlLCJ1c2VyU3RhdHVzIjoiVU5LTk9XTiIsImFnZUNhdGVnb3J5IjoiWkVST19QTFVTIiwicHJldmlld0FsbG93ZWQiOmZhbHNlLCJsZWdhY3lQcmV3IjpmYWxzZSwibWF4UXVhbGl0eSI6IkhEIiwiZHJtSW1wbGVtZW50YXRpb24iOiJXaWRldmluZSIsInRydXN0ZWRPcyI6dHJ1ZSwiZHJtQ2FwYWJpbGl0eSI6IlNXIn0.EWX-cRI6OfLdDN78WniS5IrbLfG6vlnVZ4LBYyg5wv4',
         color: 'from-cyan-500 to-cyan-700',
         icon: 'bolt',
+        brandColor: '#06b6d4',
+        brandTextColor: '#083344',
+        brandLabel: 'UNTZ',
         songInfo: { artist: null, title: null, albumArt: null }
       },
       {
@@ -123,6 +150,9 @@ export const useRadioStore = defineStore('radio', {
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-mnmhits',
         color: 'from-fuchsia-500 to-fuchsia-700',
         icon: 'sparkles',
+        brandColor: '#a21caf',
+        brandTextColor: '#ffffff',
+        brandLabel: 'HITS',
         songInfo: { artist: null, title: null, albumArt: null }
       }
     ],
@@ -461,25 +491,34 @@ export const useRadioStore = defineStore('radio', {
       }
       this.clearPendingAutoSkip()
       this.recordSkip(source)
+      const preferredValid = this.preferredStations
+        .map((id) => ({ id, index: this.stations.findIndex(s => s.id === id) }))
+        .filter(entry => entry.index > -1)
+
+      if (preferredValid.length === 0) {
+        this.skipStation(source)
+        return
+      }
+
       const currentStationId = this.currentStation?.id
-      const currentIndex = this.preferredStations.indexOf(currentStationId)
-      let nextIndex = (currentIndex + 1) % this.preferredStations.length
-      const nextStationId = this.preferredStations[nextIndex]
-      const nextStationIndex = this.stations.findIndex(s => s.id === nextStationId)
+      const currentPreferredIndex = preferredValid.findIndex(entry => entry.id === currentStationId)
+      const nextPreferredIndex = currentPreferredIndex > -1
+        ? (currentPreferredIndex + 1) % preferredValid.length
+        : 0
+      const nextStationId = preferredValid[nextPreferredIndex].id
+      const nextStationIndex = preferredValid[nextPreferredIndex].index
 
       // Remember return station (top preferred) if we're starting a skip sequence
       if (!this.isSkipping) {
         this.clearPendingAutoReturn()
-        const preferredId = this.preferredStations[0]
-        const preferredIndex = this.stations.findIndex(s => s.id === preferredId)
-        this.originalStationIndex = preferredIndex > -1 ? preferredIndex : this.currentStationIndex
+        this.originalStationIndex = preferredValid[0].index
         this.skipAttemptCount = 0
       }
       this.isSkipping = true
 
       // increment attempt and check limit
       this.skipAttemptCount = (this.skipAttemptCount || 0) + 1
-      const limit = this.maxPreferredSkips || this.preferredStations.length || Infinity
+      const limit = this.maxPreferredSkips || preferredValid.length || Infinity
       if (this.skipAttemptCount > limit) {
         this.logTelemetry('skip_limit_reached', `reached limit ${limit}, returning to original`)
         this.skipAttemptCount = 0
