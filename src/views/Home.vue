@@ -599,8 +599,9 @@ onMounted(async () => {
 watch(
   () => radioStore.currentStream,
   async () => {
+    const forcePlay = radioStore.consumeForcePlayOnNextStreamChange()
     await nextTick()
-    await reloadStream()
+    await reloadStream(forcePlay)
   }
 )
 

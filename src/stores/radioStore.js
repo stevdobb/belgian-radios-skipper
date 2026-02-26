@@ -196,7 +196,8 @@ export const useRadioStore = defineStore('radio', {
     pendingAutoSkipKey: null,
     pendingAutoSkipTimer: null,
     pendingAutoReturnKey: null,
-    pendingAutoReturnTimer: null
+    pendingAutoReturnTimer: null,
+    forcePlayOnNextStreamChange: false
   }),
 
   getters: {
@@ -221,6 +222,16 @@ export const useRadioStore = defineStore('radio', {
   },
 
   actions: {
+    markForcePlayOnNextStreamChange() {
+      this.forcePlayOnNextStreamChange = true
+    },
+
+    consumeForcePlayOnNextStreamChange() {
+      const shouldForcePlay = this.forcePlayOnNextStreamChange
+      this.forcePlayOnNextStreamChange = false
+      return shouldForcePlay
+    },
+
     clearPendingAutoSkip() {
       if (this.pendingAutoSkipTimer) {
         clearTimeout(this.pendingAutoSkipTimer)
@@ -514,6 +525,7 @@ export const useRadioStore = defineStore('radio', {
     skipStation(source = 'manual') {
       this.clearPendingAutoSkip()
       this.recordSkip(source)
+      this.markForcePlayOnNextStreamChange()
       this.currentStationIndex = (this.currentStationIndex + 1) % this.stations.length
       this.isPlaying = true
       if (this.currentStation) {
@@ -530,6 +542,7 @@ export const useRadioStore = defineStore('radio', {
       }
       this.clearPendingAutoSkip()
       this.recordSkip(source)
+      this.markForcePlayOnNextStreamChange()
       const preferredValid = this.preferredStations
         .map((id) => ({ id, index: this.stations.findIndex(s => s.id === id) }))
         .filter(entry => entry.index > -1)
@@ -583,6 +596,7 @@ export const useRadioStore = defineStore('radio', {
 
     returnToOriginalStation(targetIndex) {
       this.clearPendingAutoReturn()
+      this.markForcePlayOnNextStreamChange()
       const returnIndex = targetIndex !== undefined && targetIndex !== null
         ? targetIndex
         : this.originalStationIndex
