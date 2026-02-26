@@ -9,6 +9,28 @@ const AUTO_RETURN_DELAY_MS = 15000
 const normalize = (value) => String(value ?? '').toLowerCase().trim()
 const buildSongKey = (stationId, artist, title) => `${stationId ?? 'x'}|${normalize(artist)}|${normalize(title)}`
 
+const extractNowOnAirItem = (payload) => {
+  if (!payload || typeof payload !== 'object') return null
+
+  if (payload.nowOnAirItem && typeof payload.nowOnAirItem === 'object') {
+    return payload.nowOnAirItem
+  }
+
+  if (Array.isArray(payload.schedule)) {
+    for (const item of payload.schedule) {
+      if (item?.nowOnAirItem && typeof item.nowOnAirItem === 'object') {
+        return item.nowOnAirItem
+      }
+    }
+  }
+
+  if (payload.live?.nowOnAirItem && typeof payload.live.nowOnAirItem === 'object') {
+    return payload.live.nowOnAirItem
+  }
+
+  return null
+}
+
 const buildSongInfo = (songData) => {
   if (!songData) return { artist: null, title: null, albumArt: null }
   const artist = songData.artist || songData.author
@@ -134,7 +156,7 @@ export const useRadioStore = defineStore('radio', {
         name: 'Studio Brussel Untz',
         shortName: 'Untz',
         stream: 'https://radio.vrtcdn.be/vrt/stubru-untz/live.m3u8?ola=true&contentType=LIVESTREAM&filter=%28%21%28type%3D%3D%22audio%22%26%26FourCC%21%3D%22AACL%22%29%29',
-        endpoint: 'https://media-services-public.vrt.be/media-aggregator/v2/media-items/livestream-audio-stubruuntz?client=vrtnu-web%40PROD&vrtPlayerToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NzA0NTMwMDAsImdlb0xvY2F0aW9uIjoiQkVMR0lVTSIsImF1dGhlbnRpY2F0ZWQiOmZhbHNlLCJ1c2VyU3RhdHVzIjoiVU5LTk9XTiIsImFnZUNhdGVnb3J5IjoiWkVST19QTFVTIiwicHJldmlld0FsbG93ZWQiOmZhbHNlLCJsZWdhY3lQcmV3IjpmYWxzZSwibWF4UXVhbGl0eSI6IkhEIiwiZHJtSW1wbGVtZW50YXRpb24iOiJXaWRldmluZSIsInRydXN0ZWRPcyI6dHJ1ZSwiZHJtQ2FwYWJpbGl0eSI6IlNXIn0.EWX-cRI6OfLdDN78WniS5IrbLfG6vlnVZ4LBYyg5wv4',
+        endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-stubruuntz',
         color: 'from-cyan-500 to-cyan-700',
         icon: 'bolt',
         brandColor: '#06b6d4',
@@ -318,8 +340,7 @@ export const useRadioStore = defineStore('radio', {
         if (!this.currentStation || this.currentStation.id !== stationId) {
           return
         }
-        const scheduleItem = response.data.schedule?.find(item => item.nowOnAirItem)
-        const songData = scheduleItem?.nowOnAirItem
+        const songData = extractNowOnAirItem(response.data)
 
         if (songData) {
           const info = buildSongInfo(songData)
@@ -361,8 +382,7 @@ export const useRadioStore = defineStore('radio', {
         }
         try {
           const response = await axios.get(station.endpoint)
-          const scheduleItem = response.data.schedule?.find(item => item.nowOnAirItem)
-          const songData = scheduleItem?.nowOnAirItem
+          const songData = extractNowOnAirItem(response.data)
 
           if (songData) {
             station.songInfo = buildSongInfo(songData)
@@ -401,8 +421,7 @@ export const useRadioStore = defineStore('radio', {
 
       try {
         const response = await axios.get(original.endpoint)
-        const scheduleItem = response.data.schedule?.find(item => item.nowOnAirItem)
-        const songData = scheduleItem?.nowOnAirItem
+        const songData = extractNowOnAirItem(response.data)
 
         const info = buildSongInfo(songData)
         if (original) {
