@@ -5,6 +5,7 @@ const SKIP_HISTORY_KEY = 'skipHistory'
 const SKIP_HISTORY_LIMIT = 20
 const AUTO_SKIP_DELAY_MS = 3000
 const AUTO_RETURN_DELAY_MS = 15000
+const AUTO_RETURN_EXTRA_DELAY_AFTER_DISLIKED_SKIP_MS = 20000
 
 const normalize = (value) => String(value ?? '').toLowerCase().trim()
 const buildSongKey = (stationId, artist, title) => `${stationId ?? 'x'}|${normalize(artist)}|${normalize(title)}`
@@ -197,6 +198,7 @@ export const useRadioStore = defineStore('radio', {
     pendingAutoSkipTimer: null,
     pendingAutoReturnKey: null,
     pendingAutoReturnTimer: null,
+    autoReturnNeedsExtraDelay: false,
     forcePlayOnNextStreamChange: false
   }),
 
@@ -294,6 +296,9 @@ export const useRadioStore = defineStore('radio', {
       if (this.pendingAutoReturnKey === key) return
       this.clearPendingAutoReturn()
       this.pendingAutoReturnKey = key
+      const returnDelay = AUTO_RETURN_DELAY_MS + (
+        this.autoReturnNeedsExtraDelay ? AUTO_RETURN_EXTRA_DELAY_AFTER_DISLIKED_SKIP_MS : 0
+      )
       this.pendingAutoReturnTimer = setTimeout(() => {
         if (!this.autoReturn) {
           this.clearPendingAutoReturn()
@@ -316,7 +321,7 @@ export const useRadioStore = defineStore('radio', {
         }
         this.returnToOriginalStation(this.originalStationIndex)
         this.clearPendingAutoReturn()
-      }, AUTO_RETURN_DELAY_MS)
+      }, returnDelay)
     },
 
     selectStation(index) {
@@ -326,6 +331,7 @@ export const useRadioStore = defineStore('radio', {
       this.originalStationIndex = index
       this.isSkipping = false
       this.skipAttemptCount = 0
+      this.autoReturnNeedsExtraDelay = false
       this.currentStationIndex = index
       this.isPlaying = true
       if (this.currentStation) {
@@ -526,6 +532,7 @@ export const useRadioStore = defineStore('radio', {
       this.clearPendingAutoSkip()
       this.recordSkip(source)
       this.markForcePlayOnNextStreamChange()
+      this.autoReturnNeedsExtraDelay = source === 'auto'
       this.currentStationIndex = (this.currentStationIndex + 1) % this.stations.length
       this.isPlaying = true
       if (this.currentStation) {
@@ -567,6 +574,7 @@ export const useRadioStore = defineStore('radio', {
         this.skipAttemptCount = 0
       }
       this.isSkipping = true
+      this.autoReturnNeedsExtraDelay = source === 'auto'
 
       // increment attempt and check limit
       this.skipAttemptCount = (this.skipAttemptCount || 0) + 1
@@ -606,6 +614,7 @@ export const useRadioStore = defineStore('radio', {
       this.originalStationIndex = null
       this.isSkipping = false
       this.skipAttemptCount = 0
+      this.autoReturnNeedsExtraDelay = false
       this.logTelemetry('return', `returned to stationIndex:${this.currentStationIndex}`)
       if (this.currentStation) {
         this.currentStation.songInfo = { artist: null, title: null, albumArt: null }
