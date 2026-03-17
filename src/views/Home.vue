@@ -69,6 +69,32 @@
                     </Transition>
                   </div>
                 </div>
+                <div class="flex flex-wrap gap-2 pt-1">
+                  <button
+                    @click="addCurrentArtistDislike"
+                    :disabled="!currentSongInfo.artist || hasExactDislike(currentSongInfo.artist)"
+                    class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors"
+                    :class="currentSongInfo.artist && !hasExactDislike(currentSongInfo.artist)
+                      ? 'bg-red-500 hover:bg-red-600 text-white'
+                      : 'bg-[#2b67b4] text-blue-100 opacity-60 cursor-not-allowed'"
+                    title="Add current artist to dislike list"
+                  >
+                    <HandThumbDownIcon class="w-4 h-4" />
+                    <span>{{ hasExactDislike(currentSongInfo.artist) ? 'Artist blocked' : 'Block artist' }}</span>
+                  </button>
+                  <button
+                    @click="addCurrentTitleDislike"
+                    :disabled="!currentSongInfo.title || hasExactDislike(currentSongInfo.title)"
+                    class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors"
+                    :class="currentSongInfo.title && !hasExactDislike(currentSongInfo.title)
+                      ? 'bg-red-500 hover:bg-red-600 text-white'
+                      : 'bg-[#2b67b4] text-blue-100 opacity-60 cursor-not-allowed'"
+                    title="Add current song title to dislike list"
+                  >
+                    <HandThumbDownIcon class="w-4 h-4" />
+                    <span>{{ hasExactDislike(currentSongInfo.title) ? 'Song blocked' : 'Block song' }}</span>
+                  </button>
+                </div>
               </template>
               <div v-else class="text-gray-600 dark:text-slate-300 text-sm italic">
                 No song info available
@@ -231,12 +257,15 @@
             </h3>
 
             <div class="space-y-3 md:space-y-4">
+              <p class="text-gray-600 dark:text-slate-300 text-xs sm:text-sm">
+                Add an artist or song title manually, or use the buttons in Now Playing to block the current track immediately.
+              </p>
               <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
                 <input
                   v-model="dislikeInput"
                   @keyup.enter="addDislike"
                   type="text"
-                  placeholder="Enter artist name to skip..."
+                  placeholder="Enter artist or song title to skip..."
                   class="flex-1 bg-[#1a4f98] border border-blue-200 rounded-lg px-3 sm:px-4 py-2 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-blue-300 focus:ring-1 focus:ring-blue-300 transition-colors text-sm md:text-base"
                 />
                 <button
@@ -248,7 +277,7 @@
               </div>
 
               <div v-if="radioStore.dislikes.length > 0" class="space-y-2">
-                <div class="text-gray-700 dark:text-slate-200 text-xs sm:text-sm font-medium">Disliked Artists ({{ radioStore.dislikes.length }}):</div>
+                <div class="text-gray-700 dark:text-slate-200 text-xs sm:text-sm font-medium">Blocked Artists / Songs ({{ radioStore.dislikes.length }}):</div>
                 <div class="flex flex-wrap gap-2">
                   <div
                     v-for="(dislike, index) in radioStore.dislikes"
@@ -266,7 +295,7 @@
                 </div>
               </div>
               <div v-else class="text-gray-600 dark:text-slate-400 text-sm italic">
-                No disliked artists yet
+                No blocked artists or songs yet
               </div>
             </div>
           </div>
@@ -322,6 +351,7 @@ const isCastAvailable = ref(false)
 const isCasting = ref(false)
 const volume = ref(1)
 const isReloadingStream = ref(false)
+const normalize = (value) => String(value ?? '').trim().toLowerCase()
 
 const currentSongInfo = computed(() => {
   const station = radioStore.stations.find(s => s.id === radioStore.currentStation?.id)
@@ -667,6 +697,13 @@ const updateVolume = () => {
   }
 }
 
+const hasExactDislike = (value) => {
+  const needle = normalize(value)
+  return needle
+    ? radioStore.dislikes.some((entry) => normalize(entry) === needle)
+    : false
+}
+
 const skipStation = () => {
   radioStore.skipStation()
 }
@@ -677,9 +714,41 @@ const nextStation = () => {
 
 const addDislike = () => {
   if (dislikeInput.value.trim()) {
-    radioStore.addDislike(dislikeInput.value.trim())
+    const result = radioStore.addDislike(dislikeInput.value.trim())
+    if (result.added) {
+      pushToast(`Blocked: ${result.value}`, 'success')
+    } else if (result.reason === 'exists') {
+      pushToast(`Already blocked: ${result.value}`, 'warn')
+    }
     dislikeInput.value = ''
   }
+}
+
+const addCurrentDislike = (value, label) => {
+  const cleanedValue = String(value ?? '').trim()
+  if (!cleanedValue) {
+    pushToast(`No ${label.toLowerCase()} available`, 'warn')
+    return
+  }
+
+  const result = radioStore.addDislike(cleanedValue, {
+    immediateCheckCurrentSong: true,
+    immediateSkipCurrentSong: true
+  })
+
+  if (result.added) {
+    pushToast(`${label} blocked: ${result.value}`, 'success')
+  } else if (result.reason === 'exists') {
+    pushToast(`${label} already blocked`, 'warn')
+  }
+}
+
+const addCurrentArtistDislike = () => {
+  addCurrentDislike(currentSongInfo.value.artist, 'Artist')
+}
+
+const addCurrentTitleDislike = () => {
+  addCurrentDislike(currentSongInfo.value.title, 'Song')
 }
 
 const removeDislike = (index) => {

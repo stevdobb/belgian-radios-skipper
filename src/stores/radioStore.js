@@ -242,6 +242,35 @@ export const useRadioStore = defineStore('radio', {
       this.pendingAutoSkipKey = null
     },
 
+    handleDislikedSong(info = {}, options = {}) {
+      const { artist, title } = info
+      const { immediateSkip = false } = options
+
+      if (!this.isDiskliked(artist, title)) {
+        this.clearPendingAutoSkip()
+        return false
+      }
+
+      if (!this.skipEnabled) {
+        this.clearPendingAutoSkip()
+        this.logTelemetry('skip_disabled', `Detected disliked ${artist} - ${title} but skipping is disabled`)
+        return true
+      }
+
+      if (immediateSkip) {
+        this.clearPendingAutoSkip()
+        if (this.preferredStations.length > 0) {
+          this.skipToNextPreferred('auto')
+        } else {
+          this.skipStation('auto')
+        }
+        return true
+      }
+
+      this.scheduleAutoSkip(artist, title)
+      return true
+    },
+
     scheduleAutoSkip(artist, title) {
       if (!this.skipEnabled) {
         this.clearPendingAutoSkip()
@@ -362,21 +391,7 @@ export const useRadioStore = defineStore('radio', {
         if (songData) {
           const info = buildSongInfo(songData)
           station.songInfo = info
-          if (this.isDiskliked(info.artist, info.title)) {
-            if (!this.skipEnabled) {
-              this.clearPendingAutoSkip()
-              this.logTelemetry('skip_disabled', `Detected disliked ${info.artist} - ${info.title} but skipping is disabled`)
-            } else if (immediateSkip) {
-              this.clearPendingAutoSkip()
-              if (this.preferredStations.length > 0) {
-                this.skipToNextPreferred('auto')
-              } else {
-                this.skipStation('auto')
-              }
-            } else {
-              this.scheduleAutoSkip(info.artist, info.title)
-            }
-          } else {
+          if (!this.handleDislikedSong(info, { immediateSkip })) {
             this.clearPendingAutoSkip()
           }
         } else {
@@ -454,13 +469,28 @@ export const useRadioStore = defineStore('radio', {
       }
     },
 
-    addDislike(artist) {
-      const cleanedArtist = String(artist ?? '').trim()
-      if (!cleanedArtist) return
-      const exists = this.dislikes.some((entry) => normalize(entry) === normalize(cleanedArtist))
+    addDislike(value, options = {}) {
+      const cleanedValue = String(value ?? '').trim()
+      if (!cleanedValue) {
+        return { added: false, reason: 'empty', value: '' }
+      }
+
+      const exists = this.dislikes.some((entry) => normalize(entry) === normalize(cleanedValue))
       if (!exists) {
-        this.dislikes.push(cleanedArtist)
+        this.dislikes.push(cleanedValue)
         this.saveDislikes()
+      }
+
+      if (options.immediateCheckCurrentSong) {
+        this.handleDislikedSong(this.currentSongInfo, {
+          immediateSkip: Boolean(options.immediateSkipCurrentSong)
+        })
+      }
+
+      return {
+        added: !exists,
+        reason: exists ? 'exists' : 'added',
+        value: cleanedValue
       }
     },
 

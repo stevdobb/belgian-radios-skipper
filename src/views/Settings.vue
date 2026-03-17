@@ -92,8 +92,8 @@
       <div class="space-y-4">
         <div class="flex items-center justify-between">
           <div>
-            <label class="text-gray-900 dark:text-slate-100 font-medium">Disliked Artists</label>
-            <p class="text-gray-600 dark:text-slate-300 text-sm mt-1">You have {{ radioStore.dislikes.length }} disliked artists saved</p>
+            <label class="text-gray-900 dark:text-slate-100 font-medium">Blocked Artists and Songs</label>
+            <p class="text-gray-600 dark:text-slate-300 text-sm mt-1">You have {{ radioStore.dislikes.length }} blocked artists or songs saved</p>
           </div>
           <button
             @click="clearDisliked"
@@ -229,7 +229,7 @@ const exportTelemetryCsv = () => {
 }
 
 const clearDisliked = () => {
-  if (confirm('Are you sure you want to clear all disliked artists?')) {
+  if (confirm('Are you sure you want to clear all blocked artists and songs?')) {
     radioStore.dislikes = []
     radioStore.saveDislikes()
   }
