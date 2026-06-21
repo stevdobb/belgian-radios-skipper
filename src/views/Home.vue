@@ -347,6 +347,7 @@ let castContext = null
 let remotePlayer = null
 let remotePlayerController = null
 let originalCheckInterval = null
+let castContextInitialized = false
 const isCastAvailable = ref(false)
 const isCasting = ref(false)
 const volume = ref(1)
@@ -402,26 +403,35 @@ watch(() => radioStore.telemetry.slice(0, 5), (newVal, oldVal) => {
 }, { deep: true })
 
 const buildCastMetadata = () => {
-  if (!window.chrome?.cast?.media) return null
-  const metadata = new window.chrome.cast.media.MusicTrackMediaMetadata()
-  metadata.title = currentSongInfo.value.title || radioStore.currentStationName || 'Belgian Radio'
-  metadata.artist = currentSongInfo.value.artist || radioStore.currentStationName || 'VRT'
-  metadata.albumName = radioStore.currentStationName || 'Belgian Radio'
-  if (currentSongInfo.value.albumArt) {
-    metadata.images = [new window.chrome.cast.Image(currentSongInfo.value.albumArt)]
+  try {
+    if (!window.chrome?.cast?.media) return null
+    const metadata = new window.chrome.cast.media.MusicTrackMediaMetadata()
+    metadata.title = currentSongInfo.value.title || radioStore.currentStationName || 'Belgian Radio'
+    metadata.artist = currentSongInfo.value.artist || radioStore.currentStationName || 'VRT'
+    metadata.albumName = radioStore.currentStationName || 'Belgian Radio'
+    if (currentSongInfo.value.albumArt) {
+      metadata.images = [new window.chrome.cast.Image(currentSongInfo.value.albumArt)]
+    }
+    return metadata
+  } catch (error) {
+    console.error('Error building Cast metadata:', error)
+    return null
   }
-  return metadata
 }
 
 const updateCastMetadata = () => {
-  if (!castContext || typeof window === 'undefined') return
-  const session = castContext.getCurrentSession()
-  const mediaSession = session?.getMediaSession()
-  if (!mediaSession || !mediaSession.media) return
-  const metadata = buildCastMetadata()
-  if (!metadata) return
-  // Avoid reloading the media on metadata changes to prevent audio interruptions.
-  mediaSession.media.metadata = metadata
+  try {
+    if (!castContext || typeof window === 'undefined') return
+    const session = castContext.getCurrentSession()
+    const mediaSession = session?.getMediaSession()
+    if (!mediaSession || !mediaSession.media) return
+    const metadata = buildCastMetadata()
+    if (!metadata) return
+    // Avoid reloading the media on metadata changes to prevent audio interruptions.
+    mediaSession.media.metadata = metadata
+  } catch (error) {
+    console.error('Error updating Cast metadata:', error)
+  }
 }
 
 const loadCastStream = async (autoplay = true) => {
@@ -566,11 +576,16 @@ const toggleCastPlayback = async () => {
 const initializeCast = () => {
   if (typeof window === 'undefined') return false
   
+  // Prevent multiple initializations
+  if (castContextInitialized) return true
+  
   // Check if Cast API and framework are available
   if (!window.cast?.framework || !window.chrome?.cast) return false
 
   try {
     castContext = window.cast.framework.CastContext.getInstance()
+    castContextInitialized = true
+    
     castContext.setOptions({
       receiverApplicationId: window.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
       autoJoinPolicy: window.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
@@ -610,8 +625,18 @@ const initializeCast = () => {
     return true
   } catch (error) {
     console.error('Error initializing Cast:', error)
+    castContextInitialized = false
     return false
   }
+}
+
+// Handle visibility changes to refresh data when app returns to foreground
+const handleVisibilityChange = () => {
+  if (document.hidden) return
+  // App came back to foreground, refresh data
+  console.log('App returned to foreground, refreshing data...')
+  radioStore.fetchCurrentSong()
+  radioStore.fetchAllStations()
 }
 
 onMounted(async () => {
@@ -660,25 +685,36 @@ onMounted(async () => {
   const MAX_CAST_ATTEMPTS = 20 // ~10 seconds with 500ms intervals
   
   const attemptCastInit = () => {
-    if (initializeCast()) {
-      console.log('Cast API initialized successfully')
-      if (castInitTimer) {
-        clearInterval(castInitTimer)
-        castInitTimer = null
+    try {
+      if (initializeCast()) {
+        console.log('Cast API initialized successfully')
+        if (castInitTimer) {
+          clearTimeout(castInitTimer)
+          castInitTimer = null
+        }
+        return
       }
-      return
-    }
-    
-    if (castAttempts < MAX_CAST_ATTEMPTS) {
-      castAttempts++
-      castInitTimer = setTimeout(attemptCastInit, 500)
-    } else {
-      console.warn('Cast API failed to initialize after', MAX_CAST_ATTEMPTS * 500, 'ms')
+      
+      if (castAttempts < MAX_CAST_ATTEMPTS) {
+        castAttempts++
+        castInitTimer = setTimeout(attemptCastInit, 500)
+      } else {
+        console.warn('Cast API failed to initialize after', MAX_CAST_ATTEMPTS * 500, 'ms')
+      }
+    } catch (error) {
+      console.error('Error during Cast initialization attempt:', error)
+      if (castAttempts < MAX_CAST_ATTEMPTS) {
+        castAttempts++
+        castInitTimer = setTimeout(attemptCastInit, 500)
+      }
     }
   }
 
   // Start the initialization attempt
   attemptCastInit()
+
+  // Listen for visibility changes to refresh data when app returns to foreground
+  document.addEventListener('visibilitychange', handleVisibilityChange)
 })
 
 watch(
@@ -709,14 +745,16 @@ onUnmounted(() => {
     clearInterval(refreshInterval)
   }
   if (castInitTimer) {
-    clearInterval(castInitTimer)
+    clearTimeout(castInitTimer)
   }
-    if (originalCheckInterval) {
-      clearInterval(originalCheckInterval)
-    }
+  if (originalCheckInterval) {
+    clearInterval(originalCheckInterval)
+  }
   if (audioPlayer.value) {
     audioPlayer.value.pause()
   }
+  // Clean up visibility listener
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 
 const onPlay = () => {

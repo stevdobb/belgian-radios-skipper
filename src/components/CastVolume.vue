@@ -43,33 +43,23 @@ let initializeAttempts = 0
 const MAX_INIT_ATTEMPTS = 30 // 30 seconds with 1s intervals
 
 const initCastFramework = () => {
-  // If Chrome Cast API is already initialized, skip
+  // If Cast API is already initialized, proceed to set up remote player
   if (castInitialized) {
     return
   }
 
-  // Check if cast API exists
-  if (typeof chrome === 'undefined' || !chrome.cast) {
+  // Check if cast.framework is available (initialized by cast_sender.js)
+  if (typeof cast === 'undefined' || !cast.framework) {
     if (initializeAttempts < MAX_INIT_ATTEMPTS) {
       initializeAttempts++
-      setTimeout(initCastFramework, 1000)
+      setTimeout(initCastFramework, 500)
     }
     return
   }
 
-  // Initialize the cast framework
-  const sessionRequest = new chrome.cast.SessionRequest(chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID)
-  
-  const onInitSuccess = () => {
-    castInitialized = true
-    initRemotePlayer()
-  }
-
-  const onInitError = (errorCode) => {
-    console.error('Cast initialization error:', errorCode)
-  }
-
-  chrome.cast.initialize(sessionRequest, onInitSuccess, onInitError)
+  // Mark as initialized and setup remote player
+  castInitialized = true
+  initRemotePlayer()
 }
 
 const initRemotePlayer = () => {
