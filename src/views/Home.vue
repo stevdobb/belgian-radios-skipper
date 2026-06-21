@@ -394,25 +394,34 @@ const updateCastMetadata = () => {
 }
 
 const loadCastStream = async (autoplay = true) => {
-  if (!castContext || typeof window === 'undefined') return
+  if (!castContext || typeof window === 'undefined') {
+    console.error('Cast context not available')
+    return
+  }
+  
   const session = castContext.getCurrentSession()
-  if (!session || !window.chrome?.cast?.media) return
-
-  const mediaInfo = new window.chrome.cast.media.MediaInfo(radioStore.currentStream, 'audio/mpeg')
-  const metadata = buildCastMetadata()
-  if (metadata) {
-    mediaInfo.metadata = metadata
+  if (!session || !window.chrome?.cast?.media) {
+    console.error('No active Cast session or Chrome cast media API not available')
+    return
   }
 
-  const request = new window.chrome.cast.media.LoadRequest(mediaInfo)
-  request.autoplay = autoplay
-
   try {
+    const mediaInfo = new window.chrome.cast.media.MediaInfo(radioStore.currentStream, 'audio/mpeg')
+    const metadata = buildCastMetadata()
+    if (metadata) {
+      mediaInfo.metadata = metadata
+    }
+
+    const request = new window.chrome.cast.media.LoadRequest(mediaInfo)
+    request.autoplay = autoplay
+
     await session.loadMedia(request)
     radioStore.isPlaying = autoplay
+    console.log('Cast stream loaded successfully')
   } catch (error) {
-    console.error('Error casting media:', error)
-    radioStore.logTelemetry('cast_error', String(error?.message || error))
+    console.error('Error loading cast media:', error)
+    radioStore.logTelemetry('cast_load_error', String(error?.message || error))
+    pushToast('Failed to load media on Cast device: ' + (error?.message || 'Unknown error'), 'error')
   }
 }
 
@@ -443,88 +452,123 @@ const setupCastController = () => {
 }
 
 const startCasting = async () => {
-  if (!castContext) return
+  if (!castContext) {
+    // Try to initialize Cast if it hasn't been initialized yet
+    console.warn('Cast context not available, attempting to initialize...')
+    if (!initializeCast()) {
+      pushToast('Cast is not available. Please ensure Cast is supported on your device.', 'warn')
+      return
+    }
+  }
+  
   try {
     await castContext.requestSession()
   } catch (error) {
     console.error('Cast session request failed:', error)
     radioStore.logTelemetry('cast_session_error', String(error?.message || error))
+    
+    // Provide user feedback based on error type
+    if (error?.code === 'CANCEL') {
+      // User cancelled the cast dialog
+      pushToast('Cast selection cancelled', 'info')
+    } else if (error?.code === 'SESSION_ERROR') {
+      // Session error - this might need a full restart
+      pushToast('Cast session error. Try restarting the app if this persists.', 'error')
+    } else {
+      pushToast('Failed to start casting: ' + (error?.message || 'Unknown error'), 'error')
+    }
   }
 }
 
 const toggleCastPlayback = async () => {
   const session = castContext?.getCurrentSession()
   if (!session) {
+    // No session, start casting
     await startCasting()
     return
   }
 
   const mediaSession = session.getMediaSession()
   if (!mediaSession) {
+    // No media session, load the stream first
     await loadCastStream(true)
     return
   }
 
-  const isPlaying = mediaSession.playerState === window.chrome?.cast?.media?.PlayerState?.PLAYING
-  if (isPlaying) {
-    mediaSession.pause(null, () => {
-      radioStore.isPlaying = false
-    }, (error) => {
-      console.error('Error pausing cast:', error)
-      radioStore.logTelemetry('cast_pause_error', String(error?.message || error))
-    })
-  } else {
-    mediaSession.play(null, () => {
-      radioStore.isPlaying = true
-    }, (error) => {
-      console.error('Error playing cast:', error)
-      radioStore.logTelemetry('cast_play_error', String(error?.message || error))
-    })
+  try {
+    const isPlaying = mediaSession.playerState === window.chrome?.cast?.media?.PlayerState?.PLAYING
+    if (isPlaying) {
+      mediaSession.pause(null, () => {
+        radioStore.isPlaying = false
+      }, (error) => {
+        console.error('Error pausing cast:', error)
+        radioStore.logTelemetry('cast_pause_error', String(error?.message || error))
+        pushToast('Failed to pause Cast media', 'error')
+      })
+    } else {
+      mediaSession.play(null, () => {
+        radioStore.isPlaying = true
+      }, (error) => {
+        console.error('Error playing cast:', error)
+        radioStore.logTelemetry('cast_play_error', String(error?.message || error))
+        pushToast('Failed to play Cast media', 'error')
+      })
+    }
+  } catch (error) {
+    console.error('Error toggling cast playback:', error)
+    pushToast('Failed to toggle Cast playback: ' + (error?.message || 'Unknown error'), 'error')
   }
 }
 
 const initializeCast = () => {
   if (typeof window === 'undefined') return false
+  
+  // Check if Cast API and framework are available
   if (!window.cast?.framework || !window.chrome?.cast) return false
 
-  castContext = window.cast.framework.CastContext.getInstance()
-  castContext.setOptions({
-    receiverApplicationId: window.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
-    autoJoinPolicy: window.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
-  })
+  try {
+    castContext = window.cast.framework.CastContext.getInstance()
+    castContext.setOptions({
+      receiverApplicationId: window.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+      autoJoinPolicy: window.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+    })
 
-  castContext.addEventListener(
-    window.cast.framework.CastContextEventType.CAST_STATE_CHANGED,
-    (event) => {
-      isCastAvailable.value = event.castState !== window.cast.framework.CastState.NO_DEVICES_AVAILABLE
-    }
-  )
-
-  castContext.addEventListener(
-    window.cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
-    (event) => {
-      const { SessionState } = window.cast.framework
-      if (event.sessionState === SessionState.SESSION_STARTED || event.sessionState === SessionState.SESSION_RESUMED) {
-        isCasting.value = true
-        setupCastController()
-        if (audioPlayer.value) {
-          audioPlayer.value.pause()
-        }
-        loadCastStream(radioStore.isPlaying)
-        radioStore.logTelemetry('cast_session', 'started')
-      } else if (
-        event.sessionState === SessionState.SESSION_ENDED ||
-        event.sessionState === SessionState.SESSION_START_FAILED
-      ) {
-        isCasting.value = false
-        remotePlayer = null
-        remotePlayerController = null
-        radioStore.logTelemetry('cast_session', 'ended')
+    castContext.addEventListener(
+      window.cast.framework.CastContextEventType.CAST_STATE_CHANGED,
+      (event) => {
+        isCastAvailable.value = event.castState !== window.cast.framework.CastState.NO_DEVICES_AVAILABLE
       }
-    }
-  )
+    )
 
-  return true
+    castContext.addEventListener(
+      window.cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
+      (event) => {
+        const { SessionState } = window.cast.framework
+        if (event.sessionState === SessionState.SESSION_STARTED || event.sessionState === SessionState.SESSION_RESUMED) {
+          isCasting.value = true
+          setupCastController()
+          if (audioPlayer.value) {
+            audioPlayer.value.pause()
+          }
+          loadCastStream(radioStore.isPlaying)
+          radioStore.logTelemetry('cast_session', 'started')
+        } else if (
+          event.sessionState === SessionState.SESSION_ENDED ||
+          event.sessionState === SessionState.SESSION_START_FAILED
+        ) {
+          isCasting.value = false
+          remotePlayer = null
+          remotePlayerController = null
+          radioStore.logTelemetry('cast_session', 'ended')
+        }
+      }
+    )
+
+    return true
+  } catch (error) {
+    console.error('Error initializing Cast:', error)
+    return false
+  }
 }
 
 onMounted(async () => {
@@ -568,19 +612,30 @@ onMounted(async () => {
     }
   }, 5000)
 
-  if (!initializeCast()) {
-    window.__onGCastApiAvailable = (isAvailable) => {
-      if (isAvailable) {
-        initializeCast()
-      }
-    }
-    castInitTimer = setInterval(() => {
-      if (initializeCast()) {
+  // Initialize Cast - try immediately, then retry with exponential backoff
+  let castAttempts = 0
+  const MAX_CAST_ATTEMPTS = 20 // ~10 seconds with 500ms intervals
+  
+  const attemptCastInit = () => {
+    if (initializeCast()) {
+      console.log('Cast API initialized successfully')
+      if (castInitTimer) {
         clearInterval(castInitTimer)
         castInitTimer = null
       }
-    }, 500)
+      return
+    }
+    
+    if (castAttempts < MAX_CAST_ATTEMPTS) {
+      castAttempts++
+      castInitTimer = setTimeout(attemptCastInit, 500)
+    } else {
+      console.warn('Cast API failed to initialize after', MAX_CAST_ATTEMPTS * 500, 'ms')
+    }
   }
+
+  // Start the initialization attempt
+  attemptCastInit()
 })
 
 watch(

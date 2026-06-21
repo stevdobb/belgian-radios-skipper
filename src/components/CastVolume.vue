@@ -38,39 +38,79 @@ const isMuted = ref(false)
 
 let player = null
 let playerController = null
+let castInitialized = false
+let initializeAttempts = 0
+const MAX_INIT_ATTEMPTS = 30 // 30 seconds with 1s intervals
+
+const initCastFramework = () => {
+  // If Chrome Cast API is already initialized, skip
+  if (castInitialized) {
+    return
+  }
+
+  // Check if cast API exists
+  if (typeof chrome === 'undefined' || !chrome.cast) {
+    if (initializeAttempts < MAX_INIT_ATTEMPTS) {
+      initializeAttempts++
+      setTimeout(initCastFramework, 1000)
+    }
+    return
+  }
+
+  // Initialize the cast framework
+  const sessionRequest = new chrome.cast.SessionRequest(chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID)
+  
+  const onInitSuccess = () => {
+    castInitialized = true
+    initRemotePlayer()
+  }
+
+  const onInitError = (errorCode) => {
+    console.error('Cast initialization error:', errorCode)
+  }
+
+  chrome.cast.initialize(sessionRequest, onInitSuccess, onInitError)
+}
 
 const initRemotePlayer = () => {
-  if (typeof cast !== 'undefined' && cast.framework) {
-    player = new cast.framework.RemotePlayer()
-    playerController = new cast.framework.RemotePlayerController(player)
+  if (!castInitialized || typeof cast === 'undefined' || !cast.framework) {
+    return
+  }
 
-    playerController.addEventListener(
-      cast.framework.RemotePlayerEventType.IS_CONNECTED_CHANGED,
-      () => {
-        isConnected.value = player.isConnected
-      }
-    )
+  if (player && playerController) {
+    // Already initialized
+    return
+  }
 
-    playerController.addEventListener(
-      cast.framework.RemotePlayerEventType.VOLUME_LEVEL_CHANGED,
-      () => {
-        volumeLevel.value = player.volumeLevel
-      }
-    )
+  player = new cast.framework.RemotePlayer()
+  playerController = new cast.framework.RemotePlayerController(player)
 
-    playerController.addEventListener(
-      cast.framework.RemotePlayerEventType.IS_MUTED_CHANGED,
-      () => {
-        isMuted.value = player.isMuted
-      }
-    )
-    
-    // Initial state
-    isConnected.value = player.isConnected
-    if (player.isConnected) {
+  playerController.addEventListener(
+    cast.framework.RemotePlayerEventType.IS_CONNECTED_CHANGED,
+    () => {
+      isConnected.value = player.isConnected
+    }
+  )
+
+  playerController.addEventListener(
+    cast.framework.RemotePlayerEventType.VOLUME_LEVEL_CHANGED,
+    () => {
       volumeLevel.value = player.volumeLevel
+    }
+  )
+
+  playerController.addEventListener(
+    cast.framework.RemotePlayerEventType.IS_MUTED_CHANGED,
+    () => {
       isMuted.value = player.isMuted
     }
+  )
+  
+  // Initial state
+  isConnected.value = player.isConnected
+  if (player.isConnected) {
+    volumeLevel.value = player.volumeLevel
+    isMuted.value = player.isMuted
   }
 }
 
@@ -90,8 +130,13 @@ const toggleMute = () => {
 }
 
 onMounted(() => {
-  // Try to initialize immediately or wait a bit for the SDK to be ready
-  initRemotePlayer()
-  setTimeout(initRemotePlayer, 1000)
+  // Wait for window to be fully loaded before initializing Cast
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      initCastFramework()
+    }, { once: true })
+  } else {
+    initCastFramework()
+  }
 })
 </script>
