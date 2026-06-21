@@ -2,3 +2,70 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --dw-bg: #0f4ea3;
+  --dw-bg-deep: #0c438e;
+  --dw-surface: #1b5fb4;
+  --dw-surface-deep: #1a56a3;
+  --dw-border: #4f86cb;
+  --dw-text: #eef5ff;
+  --dw-text-soft: #d6e6ff;
+  --dw-text-muted: #b5cdee;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  background-color: var(--dw-bg);
+  color: var(--dw-text);
+}
+
+.dw-theme {
+  background:
+    radial-gradient(1200px 520px at 52% -220px, rgba(255, 255, 255, 0.22), transparent 62%),
+    linear-gradient(180deg, var(--dw-bg) 0%, var(--dw-bg-deep) 100%);
+}
+
+.dw-card {
+  background: linear-gradient(180deg, rgba(35, 101, 184, 0.96) 0%, rgba(26, 86, 163, 0.96) 100%);
+  border: 1px solid var(--dw-border);
+  box-shadow: 0 12px 32px rgba(6, 26, 61, 0.3);
+}
+
+.dw-theme .text-gray-900,
+.dw-theme .text-gray-800 {
+  color: var(--dw-text);
+}
+
+.dw-theme .text-gray-700,
+.dw-theme .text-gray-600 {
+  color: var(--dw-text-soft);
+}
+
+.dw-theme .text-gray-500,
+.dw-theme .text-gray-400 {
+  color: var(--dw-text-muted);
+}
+
+.dw-theme .text-blue-600 {
+  color: #d3e4ff;
+}
+
+.dw-theme .border-gray-200,
+.dw-theme .border-gray-100,
+.dw-theme .border-blue-200 {
+  border-color: var(--dw-border);
+}
+
+.dw-theme .divide-blue-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(79, 134, 203, 0.75);
+}
+
+.dw-theme .placeholder-gray-400::placeholder {
+  color: #9dbce6;
+}

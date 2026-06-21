@@ -2,36 +2,22 @@
 <template>
   <div class="space-y-6 p-6">
     <!-- General Settings Card -->
-    <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl p-6 border border-blue-200 dark:border-slate-700 shadow-lg">
+    <div class="dw-card rounded-2xl p-6">
       <h3 class="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-6 flex items-center space-x-2">
         <CogIcon class="w-6 h-6" />
         <span>General Settings</span>
       </h3>
 
       <div class="space-y-4">
-        <!-- Theme Toggle -->
-        <div class="flex items-center justify-between">
-          <div>
-            <label class="text-gray-900 dark:text-slate-100 font-medium">Dark Mode</label>
-            <p class="text-gray-600 dark:text-slate-300 text-sm mt-1">Follows your browser setting by default</p>
-          </div>
-          <div class="relative inline-block w-14 h-8 bg-gray-300 dark:bg-slate-700 rounded-full cursor-pointer" @click="toggleDarkMode">
-            <div
-              class="absolute top-1 left-1 w-6 h-6 bg-white dark:bg-slate-100 rounded-full shadow-md transition-all duration-300 transform"
-              :style="{ transform: darkMode ? 'translateX(24px)' : 'translateX(0)' }"
-            ></div>
-          </div>
-        </div>
-
         <!-- Auto-play Toggle -->
-        <div class="flex items-center justify-between pt-4 border-t border-blue-200 dark:border-slate-700">
+        <div class="flex items-center justify-between border-t border-blue-200 dark:border-slate-700 pt-4">
           <div>
             <label class="text-gray-900 dark:text-slate-100 font-medium">Auto-play</label>
             <p class="text-gray-600 dark:text-slate-300 text-sm mt-1">Automatically start playing when opening app</p>
           </div>
           <div
             class="relative inline-block w-14 h-8 rounded-full cursor-pointer"
-            :class="radioStore.autoPlay ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-700'"
+            :class="radioStore.autoPlay ? 'bg-blue-600' : 'bg-[#3d74bb]'"
             @click="toggleAutoplay"
           >
             <div
@@ -47,7 +33,7 @@
             <label class="text-gray-900 dark:text-slate-100 font-medium">Auto-return after skip</label>
             <p class="text-gray-600 dark:text-slate-300 text-sm mt-1">Automatically return to the first preferred station when the disliked song ends</p>
           </div>
-          <div class="relative inline-block w-14 h-8 bg-gray-300 dark:bg-slate-700 rounded-full cursor-pointer" @click="toggleAutoReturn">
+          <div class="relative inline-block w-14 h-8 bg-[#3d74bb] rounded-full cursor-pointer" @click="toggleAutoReturn">
             <div
               class="absolute top-1 left-1 w-6 h-6 bg-white dark:bg-slate-100 rounded-full shadow-md transition-all duration-300 transform"
               :style="{ transform: radioStore.autoReturn ? 'translateX(24px)' : 'translateX(0)' }"
@@ -61,7 +47,7 @@
             <label class="text-gray-900 dark:text-slate-100 font-medium">Enable automatic skipping</label>
             <p class="text-gray-600 dark:text-slate-300 text-sm mt-1">When enabled, disliked songs will trigger automatic skipping</p>
           </div>
-          <div class="relative inline-block w-14 h-8 bg-gray-300 dark:bg-slate-700 rounded-full cursor-pointer" @click="toggleSkipEnabled">
+          <div class="relative inline-block w-14 h-8 bg-[#3d74bb] rounded-full cursor-pointer" @click="toggleSkipEnabled">
             <div
               class="absolute top-1 left-1 w-6 h-6 bg-white dark:bg-slate-100 rounded-full shadow-md transition-all duration-300 transform"
               :style="{ transform: radioStore.skipEnabled ? 'translateX(24px)' : 'translateX(0)' }"
@@ -81,7 +67,7 @@
             v-model.number="radioStore.maxPreferredSkips"
             @change="radioStore.savePreferences()"
             placeholder="(all)"
-            class="w-20 bg-white dark:bg-slate-900 border border-blue-200 dark:border-slate-700 rounded-lg px-2 py-1 text-sm text-gray-900 dark:text-slate-100"
+            class="w-20 bg-[#1a4f98] border border-blue-200 rounded-lg px-2 py-1 text-sm text-gray-900 dark:text-slate-100"
           />
         </div>
 
@@ -97,7 +83,7 @@
     </div>
 
     <!-- Storage Management Card -->
-    <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl p-6 border border-blue-200 dark:border-slate-700 shadow-lg">
+    <div class="dw-card rounded-2xl p-6">
       <h3 class="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-6 flex items-center space-x-2">
         <TrashIcon class="w-6 h-6" />
         <span>Storage Management</span>
@@ -106,8 +92,8 @@
       <div class="space-y-4">
         <div class="flex items-center justify-between">
           <div>
-            <label class="text-gray-900 dark:text-slate-100 font-medium">Disliked Artists</label>
-            <p class="text-gray-600 dark:text-slate-300 text-sm mt-1">You have {{ radioStore.dislikes.length }} disliked artists saved</p>
+            <label class="text-gray-900 dark:text-slate-100 font-medium">Blocked Artists and Songs</label>
+            <p class="text-gray-600 dark:text-slate-300 text-sm mt-1">You have {{ radioStore.dislikes.length }} blocked artists or songs saved</p>
           </div>
           <button
             @click="clearDisliked"
@@ -120,7 +106,7 @@
     </div>
 
     <!-- About Card -->
-    <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl p-6 border border-blue-200 dark:border-slate-700 shadow-lg">
+    <div class="dw-card rounded-2xl p-6">
       <h3 class="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-6 flex items-center space-x-2">
         <InformationCircleIcon class="w-6 h-6" />
         <span>About</span>
@@ -148,7 +134,7 @@
     </div>
 
     <!-- Changelog Card -->
-    <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl p-6 border border-blue-200 dark:border-slate-700 shadow-lg">
+    <div class="dw-card rounded-2xl p-6">
       <h3 class="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-6 flex items-center space-x-2">
         <SparklesIcon class="w-6 h-6" />
         <span>What's New</span>
@@ -170,7 +156,7 @@
     </div>
 
     <!-- Telemetry Card -->
-    <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl p-6 border border-blue-200 dark:border-slate-700 shadow-lg">
+    <div class="dw-card rounded-2xl p-6">
       <h3 class="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-4 flex items-center space-x-2">
         <SparklesIcon class="w-6 h-6" />
         <span>Telemetry</span>
@@ -194,9 +180,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import { useRadioStore } from '../stores/radioStore'
-import { useThemeStore } from '../stores/themeStore'
 import {
   CogIcon,
   TrashIcon,
@@ -205,12 +189,6 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const radioStore = useRadioStore()
-const themeStore = useThemeStore()
-const darkMode = computed(() => themeStore.isDark)
-
-const toggleDarkMode = () => {
-  themeStore.toggleDarkMode()
-}
 
 const toggleAutoplay = () => {
   radioStore.autoPlay = !radioStore.autoPlay
@@ -251,7 +229,7 @@ const exportTelemetryCsv = () => {
 }
 
 const clearDisliked = () => {
-  if (confirm('Are you sure you want to clear all disliked artists?')) {
+  if (confirm('Are you sure you want to clear all blocked artists and songs?')) {
     radioStore.dislikes = []
     radioStore.saveDislikes()
   }

@@ -3,11 +3,34 @@ import axios from 'axios'
 
 const SKIP_HISTORY_KEY = 'skipHistory'
 const SKIP_HISTORY_LIMIT = 20
-const AUTO_SKIP_DELAY_MS = 15000
+const AUTO_SKIP_DELAY_MS = 3000
 const AUTO_RETURN_DELAY_MS = 15000
+const AUTO_RETURN_EXTRA_DELAY_AFTER_DISLIKED_SKIP_MS = 20000
 
-const normalize = (value) => (value || '').toLowerCase().trim()
+const normalize = (value) => String(value ?? '').toLowerCase().trim()
 const buildSongKey = (stationId, artist, title) => `${stationId ?? 'x'}|${normalize(artist)}|${normalize(title)}`
+
+const extractNowOnAirItem = (payload) => {
+  if (!payload || typeof payload !== 'object') return null
+
+  if (payload.nowOnAirItem && typeof payload.nowOnAirItem === 'object') {
+    return payload.nowOnAirItem
+  }
+
+  if (Array.isArray(payload.schedule)) {
+    for (const item of payload.schedule) {
+      if (item?.nowOnAirItem && typeof item.nowOnAirItem === 'object') {
+        return item.nowOnAirItem
+      }
+    }
+  }
+
+  if (payload.live?.nowOnAirItem && typeof payload.live.nowOnAirItem === 'object') {
+    return payload.live.nowOnAirItem
+  }
+
+  return null
+}
 
 const buildSongInfo = (songData) => {
   if (!songData) return { artist: null, title: null, albumArt: null }
@@ -33,6 +56,9 @@ export const useRadioStore = defineStore('radio', {
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-stubru',
         color: 'from-blue-500 to-blue-700',
         icon: 'music',
+        brandColor: '#facc15',
+        brandTextColor: '#111827',
+        brandLabel: 'STUBRU',
         songInfo: { artist: null, title: null, albumArt: null }
       },
       {
@@ -43,6 +69,9 @@ export const useRadioStore = defineStore('radio', {
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-mnm',
         color: 'from-purple-500 to-purple-700',
         icon: 'microphone',
+        brandColor: '#ef4444',
+        brandTextColor: '#ffffff',
+        brandLabel: 'MNM',
         songInfo: { artist: null, title: null, albumArt: null }
       },
       {
@@ -53,6 +82,9 @@ export const useRadioStore = defineStore('radio', {
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-stubrubruut',
         color: 'from-red-500 to-red-700',
         icon: 'heart',
+        brandColor: '#111111',
+        brandTextColor: '#ffffff',
+        brandLabel: 'BRUUT',
         songInfo: { artist: null, title: null, albumArt: null }
       },
       {
@@ -63,6 +95,9 @@ export const useRadioStore = defineStore('radio', {
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-stubru-vuurland',
         color: 'from-orange-500 to-orange-700',
         icon: 'flame',
+        brandColor: '#f97316',
+        brandTextColor: '#ffffff',
+        brandLabel: 'VUUR',
         songInfo: { artist: null, title: null, albumArt: null }
       },
       {
@@ -73,6 +108,9 @@ export const useRadioStore = defineStore('radio', {
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-stubrutijdloze',
         color: 'from-amber-500 to-amber-700',
         icon: 'clock',
+        brandColor: '#f59e0b',
+        brandTextColor: '#111827',
+        brandLabel: 'TIJD',
         songInfo: { artist: null, title: null, albumArt: null }
       },
       {
@@ -83,6 +121,9 @@ export const useRadioStore = defineStore('radio', {
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-radio1',
         color: 'from-emerald-500 to-emerald-700',
         icon: 'broadcast',
+        brandColor: '#dc2626',
+        brandTextColor: '#ffffff',
+        brandLabel: 'R1',
         songInfo: { artist: null, title: null, albumArt: null }
       },
       {
@@ -93,6 +134,9 @@ export const useRadioStore = defineStore('radio', {
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-radio2vlb',
         color: 'from-lime-500 to-lime-700',
         icon: 'map',
+        brandColor: '#0ea5e9',
+        brandTextColor: '#ffffff',
+        brandLabel: 'R2',
         songInfo: { artist: null, title: null, albumArt: null }
       },
       {
@@ -103,6 +147,9 @@ export const useRadioStore = defineStore('radio', {
         endpoint: null,
         color: 'from-pink-500 to-pink-700',
         icon: 'music',
+        brandColor: '#e11d48',
+        brandTextColor: '#ffffff',
+        brandLabel: 'Q',
         songInfo: { artist: null, title: null, albumArt: null }
       },
       {
@@ -110,9 +157,12 @@ export const useRadioStore = defineStore('radio', {
         name: 'Studio Brussel Untz',
         shortName: 'Untz',
         stream: 'https://radio.vrtcdn.be/vrt/stubru-untz/live.m3u8?ola=true&contentType=LIVESTREAM&filter=%28%21%28type%3D%3D%22audio%22%26%26FourCC%21%3D%22AACL%22%29%29',
-        endpoint: 'https://media-services-public.vrt.be/media-aggregator/v2/media-items/livestream-audio-stubruuntz?client=vrtnu-web%40PROD&vrtPlayerToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NzA0NTMwMDAsImdlb0xvY2F0aW9uIjoiQkVMR0lVTSIsImF1dGhlbnRpY2F0ZWQiOmZhbHNlLCJ1c2VyU3RhdHVzIjoiVU5LTk9XTiIsImFnZUNhdGVnb3J5IjoiWkVST19QTFVTIiwicHJldmlld0FsbG93ZWQiOmZhbHNlLCJsZWdhY3lQcmV3IjpmYWxzZSwibWF4UXVhbGl0eSI6IkhEIiwiZHJtSW1wbGVtZW50YXRpb24iOiJXaWRldmluZSIsInRydXN0ZWRPcyI6dHJ1ZSwiZHJtQ2FwYWJpbGl0eSI6IlNXIn0.EWX-cRI6OfLdDN78WniS5IrbLfG6vlnVZ4LBYyg5wv4',
+        endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-stubruuntz',
         color: 'from-cyan-500 to-cyan-700',
         icon: 'bolt',
+        brandColor: '#06b6d4',
+        brandTextColor: '#083344',
+        brandLabel: 'UNTZ',
         songInfo: { artist: null, title: null, albumArt: null }
       },
       {
@@ -123,6 +173,9 @@ export const useRadioStore = defineStore('radio', {
         endpoint: 'https://media-services-public.vrt.be/vualto-video-aggregator-web/rest/external/v2/channels/livestream-audio-mnmhits',
         color: 'from-fuchsia-500 to-fuchsia-700',
         icon: 'sparkles',
+        brandColor: '#a21caf',
+        brandTextColor: '#ffffff',
+        brandLabel: 'HITS',
         songInfo: { artist: null, title: null, albumArt: null }
       }
     ],
@@ -144,7 +197,9 @@ export const useRadioStore = defineStore('radio', {
     pendingAutoSkipKey: null,
     pendingAutoSkipTimer: null,
     pendingAutoReturnKey: null,
-    pendingAutoReturnTimer: null
+    pendingAutoReturnTimer: null,
+    autoReturnNeedsExtraDelay: false,
+    forcePlayOnNextStreamChange: false
   }),
 
   getters: {
@@ -157,7 +212,6 @@ export const useRadioStore = defineStore('radio', {
     },
     currentSongInfo: (state) => state.stations[state.currentStationIndex]?.songInfo,
     isDiskliked: (state) => (artist, title) => {
-      const normalize = (value) => (value || '').toLowerCase()
       const artistValue = normalize(artist)
       const titleValue = normalize(title)
       return state.dislikes.some((dislike) => {
@@ -170,12 +224,51 @@ export const useRadioStore = defineStore('radio', {
   },
 
   actions: {
+    markForcePlayOnNextStreamChange() {
+      this.forcePlayOnNextStreamChange = true
+    },
+
+    consumeForcePlayOnNextStreamChange() {
+      const shouldForcePlay = this.forcePlayOnNextStreamChange
+      this.forcePlayOnNextStreamChange = false
+      return shouldForcePlay
+    },
+
     clearPendingAutoSkip() {
       if (this.pendingAutoSkipTimer) {
         clearTimeout(this.pendingAutoSkipTimer)
       }
       this.pendingAutoSkipTimer = null
       this.pendingAutoSkipKey = null
+    },
+
+    handleDislikedSong(info = {}, options = {}) {
+      const { artist, title } = info
+      const { immediateSkip = false } = options
+
+      if (!this.isDiskliked(artist, title)) {
+        this.clearPendingAutoSkip()
+        return false
+      }
+
+      if (!this.skipEnabled) {
+        this.clearPendingAutoSkip()
+        this.logTelemetry('skip_disabled', `Detected disliked ${artist} - ${title} but skipping is disabled`)
+        return true
+      }
+
+      if (immediateSkip) {
+        this.clearPendingAutoSkip()
+        if (this.preferredStations.length > 0) {
+          this.skipToNextPreferred('auto')
+        } else {
+          this.skipStation('auto')
+        }
+        return true
+      }
+
+      this.scheduleAutoSkip(artist, title)
+      return true
     },
 
     scheduleAutoSkip(artist, title) {
@@ -232,6 +325,9 @@ export const useRadioStore = defineStore('radio', {
       if (this.pendingAutoReturnKey === key) return
       this.clearPendingAutoReturn()
       this.pendingAutoReturnKey = key
+      const returnDelay = AUTO_RETURN_DELAY_MS + (
+        this.autoReturnNeedsExtraDelay ? AUTO_RETURN_EXTRA_DELAY_AFTER_DISLIKED_SKIP_MS : 0
+      )
       this.pendingAutoReturnTimer = setTimeout(() => {
         if (!this.autoReturn) {
           this.clearPendingAutoReturn()
@@ -254,7 +350,7 @@ export const useRadioStore = defineStore('radio', {
         }
         this.returnToOriginalStation(this.originalStationIndex)
         this.clearPendingAutoReturn()
-      }, AUTO_RETURN_DELAY_MS)
+      }, returnDelay)
     },
 
     selectStation(index) {
@@ -264,16 +360,18 @@ export const useRadioStore = defineStore('radio', {
       this.originalStationIndex = index
       this.isSkipping = false
       this.skipAttemptCount = 0
+      this.autoReturnNeedsExtraDelay = false
       this.currentStationIndex = index
       this.isPlaying = true
       if (this.currentStation) {
         this.currentStation.songInfo = { artist: null, title: null, albumArt: null }
       }
       this.streamNonce += 1
-      this.fetchCurrentSong()
+      this.fetchCurrentSong({ immediateSkip: true })
     },
 
-    async fetchCurrentSong() {
+    async fetchCurrentSong(options = {}) {
+      const { immediateSkip = false } = options
       if (!this.currentStation) return
       if (!this.currentStation.endpoint) {
         this.currentStation.songInfo = { artist: null, title: null, albumArt: null }
@@ -283,21 +381,17 @@ export const useRadioStore = defineStore('radio', {
 
       try {
         const station = this.currentStation
+        const stationId = station.id
         const response = await axios.get(station.endpoint)
-        const scheduleItem = response.data.schedule?.find(item => item.nowOnAirItem)
-        const songData = scheduleItem?.nowOnAirItem
+        if (!this.currentStation || this.currentStation.id !== stationId) {
+          return
+        }
+        const songData = extractNowOnAirItem(response.data)
 
         if (songData) {
           const info = buildSongInfo(songData)
           station.songInfo = info
-          if (this.isDiskliked(info.artist, info.title)) {
-            if (!this.skipEnabled) {
-              this.clearPendingAutoSkip()
-              this.logTelemetry('skip_disabled', `Detected disliked ${info.artist} - ${info.title} but skipping is disabled`)
-            } else {
-              this.scheduleAutoSkip(info.artist, info.title)
-            }
-          } else {
+          if (!this.handleDislikedSong(info, { immediateSkip })) {
             this.clearPendingAutoSkip()
           }
         } else {
@@ -320,8 +414,7 @@ export const useRadioStore = defineStore('radio', {
         }
         try {
           const response = await axios.get(station.endpoint)
-          const scheduleItem = response.data.schedule?.find(item => item.nowOnAirItem)
-          const songData = scheduleItem?.nowOnAirItem
+          const songData = extractNowOnAirItem(response.data)
 
           if (songData) {
             station.songInfo = buildSongInfo(songData)
@@ -360,8 +453,7 @@ export const useRadioStore = defineStore('radio', {
 
       try {
         const response = await axios.get(original.endpoint)
-        const scheduleItem = response.data.schedule?.find(item => item.nowOnAirItem)
-        const songData = scheduleItem?.nowOnAirItem
+        const songData = extractNowOnAirItem(response.data)
 
         const info = buildSongInfo(songData)
         if (original) {
@@ -377,10 +469,28 @@ export const useRadioStore = defineStore('radio', {
       }
     },
 
-    addDislike(artist) {
-      if (artist && !this.dislikes.includes(artist)) {
-        this.dislikes.push(artist)
+    addDislike(value, options = {}) {
+      const cleanedValue = String(value ?? '').trim()
+      if (!cleanedValue) {
+        return { added: false, reason: 'empty', value: '' }
+      }
+
+      const exists = this.dislikes.some((entry) => normalize(entry) === normalize(cleanedValue))
+      if (!exists) {
+        this.dislikes.push(cleanedValue)
         this.saveDislikes()
+      }
+
+      if (options.immediateCheckCurrentSong) {
+        this.handleDislikedSong(this.currentSongInfo, {
+          immediateSkip: Boolean(options.immediateSkipCurrentSong)
+        })
+      }
+
+      return {
+        added: !exists,
+        reason: exists ? 'exists' : 'added',
+        value: cleanedValue
       }
     },
 
@@ -396,7 +506,12 @@ export const useRadioStore = defineStore('radio', {
     loadDislikes() {
       const savedDislikes = localStorage.getItem('dislikes')
       if (savedDislikes) {
-        this.dislikes = JSON.parse(savedDislikes)
+        const parsed = JSON.parse(savedDislikes)
+        if (Array.isArray(parsed)) {
+          this.dislikes = parsed
+            .map((entry) => String(entry ?? '').trim())
+            .filter(Boolean)
+        }
       }
     },
 
@@ -446,7 +561,10 @@ export const useRadioStore = defineStore('radio', {
     skipStation(source = 'manual') {
       this.clearPendingAutoSkip()
       this.recordSkip(source)
+      this.markForcePlayOnNextStreamChange()
+      this.autoReturnNeedsExtraDelay = source === 'auto'
       this.currentStationIndex = (this.currentStationIndex + 1) % this.stations.length
+      this.isPlaying = true
       if (this.currentStation) {
         this.currentStation.songInfo = { artist: null, title: null, albumArt: null }
       }
@@ -461,25 +579,36 @@ export const useRadioStore = defineStore('radio', {
       }
       this.clearPendingAutoSkip()
       this.recordSkip(source)
+      this.markForcePlayOnNextStreamChange()
+      const preferredValid = this.preferredStations
+        .map((id) => ({ id, index: this.stations.findIndex(s => s.id === id) }))
+        .filter(entry => entry.index > -1)
+
+      if (preferredValid.length === 0) {
+        this.skipStation(source)
+        return
+      }
+
       const currentStationId = this.currentStation?.id
-      const currentIndex = this.preferredStations.indexOf(currentStationId)
-      let nextIndex = (currentIndex + 1) % this.preferredStations.length
-      const nextStationId = this.preferredStations[nextIndex]
-      const nextStationIndex = this.stations.findIndex(s => s.id === nextStationId)
+      const currentPreferredIndex = preferredValid.findIndex(entry => entry.id === currentStationId)
+      const nextPreferredIndex = currentPreferredIndex > -1
+        ? (currentPreferredIndex + 1) % preferredValid.length
+        : 0
+      const nextStationId = preferredValid[nextPreferredIndex].id
+      const nextStationIndex = preferredValid[nextPreferredIndex].index
 
       // Remember return station (top preferred) if we're starting a skip sequence
       if (!this.isSkipping) {
         this.clearPendingAutoReturn()
-        const preferredId = this.preferredStations[0]
-        const preferredIndex = this.stations.findIndex(s => s.id === preferredId)
-        this.originalStationIndex = preferredIndex > -1 ? preferredIndex : this.currentStationIndex
+        this.originalStationIndex = preferredValid[0].index
         this.skipAttemptCount = 0
       }
       this.isSkipping = true
+      this.autoReturnNeedsExtraDelay = source === 'auto'
 
       // increment attempt and check limit
       this.skipAttemptCount = (this.skipAttemptCount || 0) + 1
-      const limit = this.maxPreferredSkips || this.preferredStations.length || Infinity
+      const limit = this.maxPreferredSkips || preferredValid.length || Infinity
       if (this.skipAttemptCount > limit) {
         this.logTelemetry('skip_limit_reached', `reached limit ${limit}, returning to original`)
         this.skipAttemptCount = 0
@@ -494,6 +623,7 @@ export const useRadioStore = defineStore('radio', {
         // fallback to next station by index if id lookup fails
         this.currentStationIndex = (this.currentStationIndex + 1) % this.stations.length
       }
+      this.isPlaying = true
 
       if (this.currentStation) {
         this.currentStation.songInfo = { artist: null, title: null, albumArt: null }
@@ -504,6 +634,7 @@ export const useRadioStore = defineStore('radio', {
 
     returnToOriginalStation(targetIndex) {
       this.clearPendingAutoReturn()
+      this.markForcePlayOnNextStreamChange()
       const returnIndex = targetIndex !== undefined && targetIndex !== null
         ? targetIndex
         : this.originalStationIndex
@@ -513,6 +644,7 @@ export const useRadioStore = defineStore('radio', {
       this.originalStationIndex = null
       this.isSkipping = false
       this.skipAttemptCount = 0
+      this.autoReturnNeedsExtraDelay = false
       this.logTelemetry('return', `returned to stationIndex:${this.currentStationIndex}`)
       if (this.currentStation) {
         this.currentStation.songInfo = { artist: null, title: null, albumArt: null }

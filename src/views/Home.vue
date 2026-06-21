@@ -3,7 +3,7 @@
   <div class="space-y-4 md:space-y-6 pb-4 md:pb-6">
     <!-- Now Playing Section -->
     <div v-if="radioStore.currentStation" class="px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6">
-      <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-8 border border-blue-200 dark:border-slate-700 shadow-lg">
+      <div class="dw-card rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-8">
         <div class="flex items-center justify-between gap-3 mb-3 md:mb-4">
           <div class="text-blue-600 dark:text-blue-300 text-xs md:text-sm font-semibold uppercase tracking-wider">
             Now Playing
@@ -69,6 +69,32 @@
                     </Transition>
                   </div>
                 </div>
+                <div class="flex flex-wrap gap-2 pt-1">
+                  <button
+                    @click="addCurrentArtistDislike"
+                    :disabled="!currentSongInfo.artist || hasExactDislike(currentSongInfo.artist)"
+                    class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors"
+                    :class="currentSongInfo.artist && !hasExactDislike(currentSongInfo.artist)
+                      ? 'bg-red-500 hover:bg-red-600 text-white'
+                      : 'bg-[#2b67b4] text-blue-100 opacity-60 cursor-not-allowed'"
+                    title="Add current artist to dislike list"
+                  >
+                    <HandThumbDownIcon class="w-4 h-4" />
+                    <span>{{ hasExactDislike(currentSongInfo.artist) ? 'Artist blocked' : 'Block artist' }}</span>
+                  </button>
+                  <button
+                    @click="addCurrentTitleDislike"
+                    :disabled="!currentSongInfo.title || hasExactDislike(currentSongInfo.title)"
+                    class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors"
+                    :class="currentSongInfo.title && !hasExactDislike(currentSongInfo.title)
+                      ? 'bg-red-500 hover:bg-red-600 text-white'
+                      : 'bg-[#2b67b4] text-blue-100 opacity-60 cursor-not-allowed'"
+                    title="Add current song title to dislike list"
+                  >
+                    <HandThumbDownIcon class="w-4 h-4" />
+                    <span>{{ hasExactDislike(currentSongInfo.title) ? 'Song blocked' : 'Block song' }}</span>
+                  </button>
+                </div>
               </template>
               <div v-else class="text-gray-600 dark:text-slate-300 text-sm italic">
                 No song info available
@@ -93,7 +119,7 @@
               <div class="flex items-center space-x-3">
                 <button
                   @click="skipStation"
-                  class="p-2 md:p-2 hover:bg-blue-200 dark:hover:bg-slate-700 rounded-lg transition-colors text-gray-700 dark:text-slate-200 hover:text-gray-900 dark:hover:text-slate-100"
+                  class="p-2 md:p-2 hover:bg-[#2d6fbc] rounded-lg transition-colors text-gray-700 dark:text-slate-200 hover:text-gray-900 dark:hover:text-slate-100"
                   title="Previous station"
                 >
                   <BackwardIcon class="w-5 h-5" />
@@ -111,7 +137,7 @@
 
                 <button
                   @click="nextStation"
-                  class="p-2 md:p-2 hover:bg-blue-200 dark:hover:bg-slate-700 rounded-lg transition-colors text-gray-700 dark:text-slate-200 hover:text-gray-900 dark:hover:text-slate-100"
+                  class="p-2 md:p-2 hover:bg-[#2d6fbc] rounded-lg transition-colors text-gray-700 dark:text-slate-200 hover:text-gray-900 dark:hover:text-slate-100"
                   title="Next station"
                 >
                   <ForwardIcon class="w-5 h-5" />
@@ -127,7 +153,7 @@
                   step="0.01"
                   v-model="volume"
                   @input="updateVolume"
-                  class="w-36 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600 hover:accent-blue-500"
+                  class="w-36 h-1.5 bg-[#3f75ba] rounded-lg appearance-none cursor-pointer accent-blue-200 hover:accent-blue-100"
                 />
                 <div class="text-gray-600 dark:text-slate-300 text-sm font-medium">
                   {{ radioStore.isPlaying ? 'Playing' : 'Paused' }}
@@ -165,7 +191,7 @@
     <div class="px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>
-          <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 border border-blue-200 dark:border-slate-700 shadow-lg h-full">
+          <div class="dw-card rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 h-full">
             <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 mb-3 md:mb-4 flex items-center space-x-2">
               <HandThumbDownIcon class="w-5 h-5" />
               <span>Preferred Stations</span>
@@ -181,7 +207,7 @@
                     <div
                       v-for="(stationId, index) in radioStore.preferredStations"
                       :key="stationId"
-                      class="bg-white dark:bg-slate-900 border border-blue-200 dark:border-slate-700 rounded-lg p-2.5 sm:p-3 flex items-center justify-between"
+                      class="bg-[#1a4f98] border border-blue-200 rounded-lg p-2.5 sm:p-3 flex items-center justify-between"
                     >
                       <div class="flex items-center space-x-3 flex-1 min-w-0">
                         <span class="bg-blue-500 text-white w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-semibold flex-shrink-0">{{ index + 1 }}</span>
@@ -212,7 +238,7 @@
                       'px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap',
                       radioStore.isPreferredStation(station.id)
                         ? 'bg-blue-500 text-white'
-                        : 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-100 hover:bg-gray-300 dark:hover:bg-slate-600'
+                        : 'bg-[#2b67b4] text-blue-100 hover:bg-[#3a76c2]'
                     ]"
                   >
                     {{ station.shortName }}
@@ -224,20 +250,23 @@
         </div>
 
         <div>
-          <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 border border-blue-200 dark:border-slate-700 shadow-lg h-full">
+          <div class="dw-card rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 h-full">
             <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 mb-3 md:mb-4 flex items-center space-x-2">
               <HandThumbDownIcon class="w-5 h-5" />
               <span>Dislike Management</span>
             </h3>
 
             <div class="space-y-3 md:space-y-4">
+              <p class="text-gray-600 dark:text-slate-300 text-xs sm:text-sm">
+                Add an artist or song title manually, or use the buttons in Now Playing to block the current track immediately.
+              </p>
               <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
                 <input
                   v-model="dislikeInput"
                   @keyup.enter="addDislike"
                   type="text"
-                  placeholder="Enter artist name to skip..."
-                  class="flex-1 bg-white dark:bg-slate-900 border border-blue-200 dark:border-slate-700 rounded-lg px-3 sm:px-4 py-2 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors text-sm md:text-base"
+                  placeholder="Enter artist or song title to skip..."
+                  class="flex-1 bg-[#1a4f98] border border-blue-200 rounded-lg px-3 sm:px-4 py-2 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-blue-300 focus:ring-1 focus:ring-blue-300 transition-colors text-sm md:text-base"
                 />
                 <button
                   @click="addDislike"
@@ -248,12 +277,12 @@
               </div>
 
               <div v-if="radioStore.dislikes.length > 0" class="space-y-2">
-                <div class="text-gray-700 dark:text-slate-200 text-xs sm:text-sm font-medium">Disliked Artists ({{ radioStore.dislikes.length }}):</div>
+                <div class="text-gray-700 dark:text-slate-200 text-xs sm:text-sm font-medium">Blocked Artists / Songs ({{ radioStore.dislikes.length }}):</div>
                 <div class="flex flex-wrap gap-2">
                   <div
                     v-for="(dislike, index) in radioStore.dislikes"
                     :key="index"
-                    class="bg-gray-200 dark:bg-slate-700 rounded-lg px-3 py-2 text-gray-800 dark:text-slate-100 text-xs sm:text-sm flex items-center justify-between space-x-2 group hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
+                    class="bg-[#2b67b4] rounded-lg px-3 py-2 text-gray-800 dark:text-slate-100 text-xs sm:text-sm flex items-center justify-between space-x-2 group hover:bg-red-700 transition-colors"
                   >
                     <span class="truncate">{{ dislike }}</span>
                     <button
@@ -266,7 +295,7 @@
                 </div>
               </div>
               <div v-else class="text-gray-600 dark:text-slate-400 text-sm italic">
-                No disliked artists yet
+                No blocked artists or songs yet
               </div>
             </div>
           </div>
@@ -283,7 +312,7 @@
           toast.type === 'error' ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' :
           toast.type === 'warn' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
           toast.type === 'success' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
-          'bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100'
+          'bg-[#1a4f98] text-blue-100'
         ]">
           {{ toast.message }}
         </div>
@@ -321,6 +350,8 @@ let originalCheckInterval = null
 const isCastAvailable = ref(false)
 const isCasting = ref(false)
 const volume = ref(1)
+const isReloadingStream = ref(false)
+const normalize = (value) => String(value ?? '').trim().toLowerCase()
 
 const currentSongInfo = computed(() => {
   const station = radioStore.stations.find(s => s.id === radioStore.currentStation?.id)
@@ -426,14 +457,26 @@ const loadCastStream = async (autoplay = true) => {
 }
 
 const reloadStream = async (forcePlay = false) => {
+  isReloadingStream.value = true
   if (isCasting.value) {
-    await loadCastStream(forcePlay || radioStore.isPlaying)
+    try {
+      await loadCastStream(forcePlay || radioStore.isPlaying)
+      return
+    } finally {
+      isReloadingStream.value = false
+    }
+  }
+  if (!audioPlayer.value) {
+    isReloadingStream.value = false
     return
   }
-  if (!audioPlayer.value) return
-  audioPlayer.value.load()
-  if (forcePlay || radioStore.isPlaying) {
-    await attemptPlay()
+  try {
+    audioPlayer.value.load()
+    if (forcePlay || radioStore.isPlaying) {
+      await attemptPlay()
+    }
+  } finally {
+    isReloadingStream.value = false
   }
 }
 
@@ -578,7 +621,7 @@ onMounted(async () => {
   radioStore.loadSkipHistory()
   
   // Fetch current song first (don't wait for all stations)
-  radioStore.fetchCurrentSong()
+  radioStore.fetchCurrentSong({ immediateSkip: true })
   
   // Fetch all stations in background (non-blocking)
   radioStore.fetchAllStations()
@@ -641,8 +684,9 @@ onMounted(async () => {
 watch(
   () => radioStore.currentStream,
   async () => {
+    const forcePlay = radioStore.consumeForcePlayOnNextStreamChange()
     await nextTick()
-    await reloadStream()
+    await reloadStream(forcePlay)
   }
 )
 
@@ -682,6 +726,7 @@ const onPlay = () => {
 }
 
 const onPause = () => {
+  if (isReloadingStream.value) return
   if (!isCasting.value) {
     radioStore.isPlaying = false
   }
@@ -707,6 +752,13 @@ const updateVolume = () => {
   }
 }
 
+const hasExactDislike = (value) => {
+  const needle = normalize(value)
+  return needle
+    ? radioStore.dislikes.some((entry) => normalize(entry) === needle)
+    : false
+}
+
 const skipStation = () => {
   radioStore.skipStation()
 }
@@ -717,9 +769,41 @@ const nextStation = () => {
 
 const addDislike = () => {
   if (dislikeInput.value.trim()) {
-    radioStore.addDislike(dislikeInput.value.trim())
+    const result = radioStore.addDislike(dislikeInput.value.trim())
+    if (result.added) {
+      pushToast(`Blocked: ${result.value}`, 'success')
+    } else if (result.reason === 'exists') {
+      pushToast(`Already blocked: ${result.value}`, 'warn')
+    }
     dislikeInput.value = ''
   }
+}
+
+const addCurrentDislike = (value, label) => {
+  const cleanedValue = String(value ?? '').trim()
+  if (!cleanedValue) {
+    pushToast(`No ${label.toLowerCase()} available`, 'warn')
+    return
+  }
+
+  const result = radioStore.addDislike(cleanedValue, {
+    immediateCheckCurrentSong: true,
+    immediateSkipCurrentSong: true
+  })
+
+  if (result.added) {
+    pushToast(`${label} blocked: ${result.value}`, 'success')
+  } else if (result.reason === 'exists') {
+    pushToast(`${label} already blocked`, 'warn')
+  }
+}
+
+const addCurrentArtistDislike = () => {
+  addCurrentDislike(currentSongInfo.value.artist, 'Artist')
+}
+
+const addCurrentTitleDislike = () => {
+  addCurrentDislike(currentSongInfo.value.title, 'Song')
 }
 
 const removeDislike = (index) => {
